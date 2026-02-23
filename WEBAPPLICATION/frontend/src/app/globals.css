@@ -1,0 +1,308 @@
+@import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Backgrounds */
+  --bg-page: #F1F5F9;
+  --bg-surface: #F8FAFC;
+  --bg-sidebar: #E2E8F0;
+  --bg-secondary: #E2E8F0;
+
+
+
+  /* Glassmorphism - Light */
+  --glass-bg: rgba(255, 255, 255, 0.4);
+  --glass-blur: blur(64px);
+  --glass-border: 1px solid rgba(15, 23, 42, 0.08);
+  --glass-shadow: 0 4px 24px -4px rgba(15, 23, 42, 0.04);
+  --glass-inner-light: inset 0 1px 1px 0 rgba(255, 255, 255, 0.4);
+  --glass-lime-tint: rgba(204, 255, 0, 0.02);
+
+
+  /* Primary Accent - Electric Lime (Adjusted for Light) */
+  --lime-primary: #8ABF00;
+  /* Darker version for light mode legibility */
+  --lime-glow: 0 0 15px rgba(138, 191, 0, 0.1);
+
+  /* Text Colors - Light */
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  /* Darker for better contrast on light */
+  --text-tertiary: #475569;
+  /* Darker for better contrast on light */
+  --text-muted: #64748B;
+  /* Darker for better contrast on light */
+
+
+  /* Semantic Colors */
+  --status-ok: #16A34A;
+  --status-warn: #D97706;
+  --status-error: #DC2626;
+  --status-info: #2563EB;
+
+  /* Regime Colors */
+  --regime-standard: #2563EB;
+  --regime-transition: #D97706;
+  --regime-peak: #DC2626;
+
+  /* Borders & Hover */
+  --border-primary: rgba(15, 23, 42, 0.06);
+
+  --border-active: var(--lime-primary);
+  --hover-bg: rgba(15, 23, 42, 0.04);
+  --hover-border: var(--lime-primary);
+
+  /* Inputs - Light */
+  --input-bg: rgba(15, 23, 42, 0.02);
+  --input-border: rgba(15, 23, 42, 0.08);
+  --input-focus-glow: rgba(138, 191, 0, 0.15);
+
+
+  /* Standard Tailwind Tokens */
+  --background: var(--bg-page);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --primary: var(--lime-primary);
+  --border: var(--border-primary);
+  --radius: 0px;
+}
+
+.dark {
+  /* Backgrounds */
+  --bg-page: #18181B;
+  /* Industrial Charcoal */
+  --bg-surface: #0F0F10;
+  /* Deep Card Background */
+  --bg-sidebar: #0F0F10;
+  --bg-secondary: #0F0F10;
+
+  /* Glassmorphism - Dark */
+  --glass-bg: rgba(15, 15, 16, 0.6);
+  --glass-blur: blur(64px);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.05);
+  --glass-shadow: 0 12px 48px -12px rgba(0, 0, 0, 0.5);
+  --glass-inner-light: inset 0 1px 1px 0 rgba(255, 255, 255, 0.03);
+  --glass-lime-tint: rgba(204, 255, 0, 0.04);
+
+
+  /* Primary Accent - Electric Lime */
+  --lime-primary: #CCFF00;
+  --lime-glow: 0 0 20px rgba(204, 255, 0, 0.15);
+
+  /* Text Colors - Dark */
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  /* Brighter for dark mode */
+  --text-tertiary: #A1A1AA;
+  /* Brighter for dark mode */
+  --text-muted: #71717A;
+  /* Brighter for dark mode */
+
+  /* Semantic Colors */
+  --status-ok: #CCFF00;
+  --status-warn: #F59E0B;
+  --status-error: #FF4444;
+
+  /* Regime Colors */
+  --regime-standard: #2563EBCC;
+  --regime-transition: #F59E0BCC;
+  --regime-peak: #DC2626CC;
+
+  /* Borders & Hover */
+  --border-primary: rgba(255, 255, 255, 0.04);
+
+  --border-active: #CCFF00;
+  --hover-bg: rgba(255, 255, 255, 0.03);
+
+  /* Inputs - Dark */
+  --input-bg: rgba(255, 255, 255, 0.02);
+  --input-border: rgba(255, 255, 255, 0.06);
+  --input-focus-glow: rgba(191, 255, 0, 0.2);
+
+
+  --background: var(--bg-page);
+  --foreground: var(--text-primary);
+
+  /* Native UI Controls */
+  color-scheme: dark;
+}
+
+/* Ensure dropdown options are dark in dark mode */
+.dark option {
+  background-color: #18181b !important;
+  /* var(--bg-page) hardcoded for browser safety */
+  color: #fafafa !important;
+}
+
+.dark select {
+  color-scheme: dark;
+}
+
+
+
+
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply outline-none border-border/10;
+  }
+
+  *:focus-visible {
+    @apply outline-2 outline-primary/30 outline-offset-2;
+  }
+
+
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Global Typography Spacing Fixes */
+[style*="fontFamily: var(--font-geist-mono)"],
+.font-mono {
+  letter-spacing: 0.02em !important;
+  line-height: 1.5 !important;
+}
+
+[class*="tracking-widest"],
+[style*="letterSpacing"] {
+  letter-spacing: 0.15em !important;
+}
+
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+  :where(:not(:has([class*=' text-']), :not(:has([class^='text-'])))) {
+    h1 {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h2 {
+      font-size: var(--text-xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h3 {
+      font-size: var(--text-lg);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h4 {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    label {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    button {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    input {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+  }
+}
+
+html {
+  font-size: 16px;
+}
+
+/* Landing page sections get slightly larger base font */
+#technology,
+#features,
+#kalman,
+#api,
+footer {
+  font-size: 17px;
+}
+
+.glass-morphism {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur);
+  border: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow), var(--glass-inner-light) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.glass-morphism::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.glass-morphism:hover {
+  border-color: rgba(204, 255, 0, 0.15) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.dark .glass-morphism:hover {
+  border-color: rgba(204, 255, 0, 0.2) !important;
+  box-shadow: var(--glass-shadow), inset 0 1px 1px 0 rgba(255, 255, 255, 0.05), var(--lime-glow) !important;
+}
