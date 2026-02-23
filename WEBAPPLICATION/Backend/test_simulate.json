@@ -1,0 +1,6 @@
+{
+    "horizon_hours": 24,
+    "temp_offset": 2.0,
+    "inflow_offset_pct": 10.0,
+    "industrial_load_offset_pct": -5.0
+}
