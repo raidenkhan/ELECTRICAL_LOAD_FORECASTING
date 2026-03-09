@@ -1,11 +1,10 @@
-import { Crown, TrendingUp, CheckCircle, AlertCircle, Award, BarChart3, Loader2, ChevronRight } from 'lucide-react';
-
+import { Crown, TrendingUp, CheckCircle, AlertCircle, Award, BarChart3, Loader2, ChevronRight, AlertTriangle, Info, CheckCircle2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { forecastService } from '@/services/forecastService';
 
 export function ModelPerformance() {
-  const [metrics, setMetrics] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -23,17 +22,26 @@ export function ModelPerformance() {
     fetchData();
   }, []);
 
-  const stlfMetrics = metrics.find(m => m.horizon.includes('STLF')) || { mae: 15.4, rmse: 22.1, mape: 1.2 };
+  if (isLoading && !metrics) {
+    return (
+      <div className="p-12 border border-border border-dashed flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="w-8 h-8 animate-spin text-lime-primary opacity-20" />
+        <span className="text-[10px] font-black tracking-widest text-muted-foreground uppercase" style={{ color: 'var(--text-muted)' }}>Synching Model Metrics...</span>
+      </div>
+    );
+  }
+
+  const summary = metrics?.summary || [];
+  const stlfMetrics = summary.find((m: any) => m.horizon.includes('STLF')) || { mae: 15.4, rmse: 22.1, mape: 1.2 };
+  const trendData = metrics?.trend || [];
+  const heatmapData = metrics?.heatmap || [];
+  const featureImportanceData = metrics?.feature_importance || { features: [], base_value: 0, total_adjustment: 0 };
 
   return (
     <div className="space-y-6">
       {/* Model Performance Monitor */}
-      <div
-        className="glass-morphism overflow-hidden"
-      >
-
+      <div className="glass-morphism overflow-hidden">
         <div className="px-8 py-6 border-b" style={{ borderColor: 'var(--border-primary)', opacity: 0.5 }}>
-
           <div className="flex items-center gap-4">
             <div className="w-2 h-5" style={{ backgroundColor: 'var(--lime-primary)' }} />
             <h3 className="text-sm font-bold tracking-[0.3em] uppercase" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-geist-mono)' }}>
@@ -42,25 +50,23 @@ export function ModelPerformance() {
           </div>
         </div>
 
-
         <div className="p-6">
           {/* Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <ChampionCard />
             <MetricCard
               label="Latest MAE"
-              value={isLoading ? "..." : stlfMetrics.mae.toString()}
+              value={stlfMetrics.mae.toString()}
               unit="MW"
               status="good"
             />
             <MetricCard
               label="Latest MAPE"
-              value={isLoading ? "..." : stlfMetrics.mape.toString() + "%"}
+              value={stlfMetrics.mape.toString() + "%"}
               unit=""
               status="excellent"
             />
           </div>
-
 
           {/* Performance Trend */}
           <div className="mb-8">
@@ -69,9 +75,8 @@ export function ModelPerformance() {
             </h4>
             <div className="px-4">
               <ResponsiveContainer width="100%" height={320}>
-                <LineChart data={performanceData}>
+                <LineChart data={trendData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" strokeOpacity={0.1} vertical={false} />
-
                   <XAxis
                     dataKey="date"
                     stroke="var(--text-tertiary)"
@@ -126,7 +131,6 @@ export function ModelPerformance() {
 
           {/* Status */}
           <div className="flex items-center gap-6 pt-6 border-t" style={{ borderColor: 'var(--border-primary)', opacity: 0.5 }}>
-
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-ok)' }} />
               <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--status-ok)', fontFamily: 'var(--font-geist-mono)' }}>
@@ -134,20 +138,15 @@ export function ModelPerformance() {
               </span>
             </div>
             <span className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-geist-mono)' }}>
-              No drift detected • Last evaluated: 2 hours ago
+              No drift detected • Last evaluated: Just now
             </span>
           </div>
-
         </div>
       </div>
 
       {/* Error Heatmap */}
-      <div
-        className="glass-morphism overflow-hidden"
-      >
-
+      <div className="glass-morphism overflow-hidden">
         <div className="px-8 py-6 border-b" style={{ borderColor: 'var(--border-primary)', opacity: 0.5 }}>
-
           <div className="flex items-center gap-4">
             <div className="w-2 h-5" style={{ backgroundColor: 'var(--lime-primary)' }} />
             <h3 className="text-sm font-bold tracking-[0.3em] uppercase" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-geist-mono)' }}>
@@ -156,13 +155,9 @@ export function ModelPerformance() {
           </div>
         </div>
 
-
         <div className="p-6">
-          <ErrorHeatmap data={errorHeatmapData} />
-
-          {/* legend & Insight */}
+          <ErrorHeatmap data={heatmapData} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 pt-8 border-t" style={{ borderColor: 'var(--border-primary)', opacity: 0.5 }}>
-
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 border" style={{ backgroundColor: 'color-mix(in srgb, var(--lime-primary), transparent 80%)', borderColor: 'var(--lime-primary)' }} />
@@ -178,7 +173,6 @@ export function ModelPerformance() {
               </div>
             </div>
 
-
             <div
               className="px-6 py-4 border-l-4 flex items-start gap-4"
               style={{
@@ -186,7 +180,6 @@ export function ModelPerformance() {
                 borderLeftColor: 'var(--status-info)'
               }}
             >
-
               <BarChart3 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--status-info)' }} />
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--status-info)', fontFamily: 'var(--font-geist-mono)' }}>
@@ -198,17 +191,12 @@ export function ModelPerformance() {
               </div>
             </div>
           </div>
-
         </div>
       </div>
 
       {/* Feature Importance */}
-      <div
-        className="glass-morphism overflow-hidden"
-      >
-
+      <div className="glass-morphism overflow-hidden">
         <div className="px-8 py-6 border-b" style={{ borderColor: 'var(--border-primary)', opacity: 0.5 }}>
-
           <div className="flex items-center gap-4">
             <div className="w-2 h-5" style={{ backgroundColor: 'var(--lime-primary)' }} />
             <h3 className="text-sm font-bold tracking-[0.3em] uppercase" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-geist-mono)' }}>
@@ -217,14 +205,13 @@ export function ModelPerformance() {
           </div>
         </div>
 
-
         <div className="p-6">
           <h4 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-secondary)' }}>
             Top Contributing Features:
           </h4>
 
           <div className="space-y-3 mb-6">
-            {featureImportance.map((item, index) => (
+            {featureImportanceData.features.map((item: any, index: number) => (
               <FeatureBar key={index} {...item} rank={index + 1} />
             ))}
           </div>
@@ -238,18 +225,17 @@ export function ModelPerformance() {
             }}
           >
             <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-geist-mono)' }}>
-              Base: <strong style={{ color: 'var(--text-primary)' }}>1,548 MW</strong>
+              Base: <strong style={{ color: 'var(--text-primary)' }}>{int(featureImportanceData.base_value).toLocaleString()} MW</strong>
             </span>
             <span style={{ color: 'var(--text-muted)' }}>|</span>
-            <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--status-info)', fontFamily: 'var(--font-geist-mono)' }}>
-              Adjustments: <strong>+32 MW</strong>
+            <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: featureImportanceData.total_adjustment >= 0 ? 'var(--status-info)' : 'var(--status-error)', fontFamily: 'var(--font-geist-mono)' }}>
+              Adjustments: <strong>{featureImportanceData.total_adjustment >= 0 ? '+' : ''}{int(featureImportanceData.total_adjustment).toLocaleString()} MW</strong>
             </span>
             <span style={{ color: 'var(--text-muted)' }}>=</span>
             <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--lime-primary)', fontFamily: 'var(--font-geist-mono)' }}>
-              Final: <strong>1,580 MW</strong>
+              Final: <strong>{int(featureImportanceData.base_value + featureImportanceData.total_adjustment).toLocaleString()} MW</strong>
             </span>
           </div>
-
 
           <button
             className="text-[11px] px-6 py-3 border transition-all duration-300 flex items-center gap-3 font-bold uppercase tracking-widest hover:border-white/20 active:scale-95 group"
@@ -261,22 +247,20 @@ export function ModelPerformance() {
           >
             View Full SHAP Analysis <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
           </button>
-
         </div>
       </div>
     </div>
   );
 }
 
+// Helper for rounding/formatting MW values
+function int(val: any) {
+  return Math.round(parseFloat(val) || 0);
+}
+
 function ChampionCard() {
   return (
-    <div
-      className="px-6 py-6 glass-morphism relative overflow-hidden group transition-all duration-300"
-      style={{
-        borderColor: 'var(--status-warn)'
-      }}
-    >
-
+    <div className="px-6 py-6 glass-morphism relative overflow-hidden group transition-all duration-300" style={{ borderColor: 'var(--status-warn)' }}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <Award className="w-4 h-4" style={{ color: 'var(--status-warn)' }} />
@@ -296,7 +280,6 @@ function ChampionCard() {
   );
 }
 
-
 function MetricCard({ label, value, unit, status }: { label: string; value: string; unit: string; status: 'good' | 'excellent' }) {
   const statusConfig = {
     good: { color: 'var(--status-info)' },
@@ -305,10 +288,7 @@ function MetricCard({ label, value, unit, status }: { label: string; value: stri
   const config = statusConfig[status];
 
   return (
-    <div
-      className="px-6 py-6 glass-morphism relative overflow-hidden group transition-all duration-300"
-    >
-
+    <div className="px-6 py-6 glass-morphism relative overflow-hidden group transition-all duration-300">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-1.5 h-4" style={{ backgroundColor: config.color }} />
@@ -331,7 +311,6 @@ function MetricCard({ label, value, unit, status }: { label: string; value: stri
   );
 }
 
-
 function ErrorHeatmap({ data }: { data: any[] }) {
   const timeSlots = ['00-04', '04-08', '08-12', '12-16', '16-20', '20-24'];
 
@@ -344,24 +323,16 @@ function ErrorHeatmap({ data }: { data: any[] }) {
     }
   };
 
-
-
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
           <tr>
-            <th className="text-left pb-3 pr-4 text-[10px] font-bold tracking-widest uppercase" style={{
-              color: 'var(--text-tertiary)',
-              fontFamily: 'var(--font-geist-mono)'
-            }}>
+            <th className="text-left pb-3 pr-4 text-[10px] font-bold tracking-widest uppercase" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-geist-mono)' }}>
               MONTH
             </th>
             {timeSlots.map(slot => (
-              <th key={slot} className="text-center pb-3 px-2 text-[10px] font-bold tracking-widest uppercase" style={{
-                color: 'var(--text-tertiary)',
-                fontFamily: 'var(--font-geist-mono)'
-              }}>
+              <th key={slot} className="text-center pb-3 px-2 text-[10px] font-bold tracking-widest uppercase" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-geist-mono)' }}>
                 {slot}
               </th>
             ))}
@@ -377,18 +348,13 @@ function ErrorHeatmap({ data }: { data: any[] }) {
                 <td key={slot} className="px-1 py-1">
                   <div
                     className="w-full h-10 border transition-all duration-300 hover:scale-[1.05] hover:z-10 relative"
-                    style={{
-                      backgroundColor: getColor(row[slot]),
-                      borderColor: 'var(--border-primary)'
-                    }}
-
+                    style={{ backgroundColor: getColor(row[slot]), borderColor: 'var(--border-primary)' }}
                   />
                 </td>
               ))}
             </tr>
           ))}
         </tbody>
-
       </table>
     </div>
   );
@@ -406,40 +372,12 @@ function FeatureBar({ feature, contribution, percentage, rank }: { feature: stri
       <div className="flex-1 relative h-1.5 bg-white/5 overflow-hidden">
         <div
           className="h-full transition-all duration-500 ease-out group-hover:opacity-80"
-          style={{
-            backgroundColor: 'var(--status-info)',
-            width: `${percentage}%`
-          }}
+          style={{ backgroundColor: contribution >= 0 ? 'var(--status-info)' : 'var(--status-error)', width: `${percentage}%` }}
         />
-
       </div>
-      <span className="text-[11px] w-24 text-right flex-shrink-0 font-bold tracking-tight" style={{ color: 'var(--status-info)', fontFamily: 'var(--font-geist-mono)' }}>
-        +{contribution.toFixed(1)} MW
+      <span className="text-[11px] w-24 text-right flex-shrink-0 font-bold tracking-tight" style={{ color: contribution >= 0 ? 'var(--status-info)' : 'var(--status-error)', fontFamily: 'var(--font-geist-mono)' }}>
+        {contribution >= 0 ? '+' : ''}{contribution.toFixed(1)} MW
       </span>
     </div>
   );
 }
-
-
-const performanceData = [
-  { date: 'Jan 15', baseline: 28.5, champion: 14.2 },
-  { date: 'Jan 20', baseline: 29.1, champion: 15.1 },
-  { date: 'Jan 25', baseline: 27.8, champion: 14.8 },
-  { date: 'Jan 30', baseline: 30.2, champion: 15.4 },
-  { date: 'Feb 05', baseline: 28.9, champion: 14.9 },
-  { date: 'Feb 09', baseline: 29.5, champion: 15.4 }
-];
-
-const errorHeatmapData = [
-  { month: 'Jan', '00-04': 'low', '04-08': 'low', '08-12': 'medium', '12-16': 'high', '16-20': 'high', '20-24': 'medium' },
-  { month: 'Dec', '00-04': 'low', '04-08': 'medium', '08-12': 'high', '12-16': 'high', '16-20': 'high', '20-24': 'medium' },
-  { month: 'Nov', '00-04': 'low', '04-08': 'low', '08-12': 'medium', '12-16': 'high', '16-20': 'medium', '20-24': 'low' }
-];
-
-const featureImportance = [
-  { feature: 'Lag_96_Load (24h)', contribution: 45.2, percentage: 85 },
-  { feature: 'Rolling_Mean_24h', contribution: 28.5, percentage: 65 },
-  { feature: 'Temperature_C', contribution: 15.6, percentage: 45 },
-  { feature: 'Hour_Sin', contribution: 12.4, percentage: 35 },
-  { feature: 'NY6ZA_Flow', contribution: 5.3, percentage: 15 }
-];

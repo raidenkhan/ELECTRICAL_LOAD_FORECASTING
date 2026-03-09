@@ -1,4 +1,4 @@
-import { X, AlertTriangle, Loader2, Info } from 'lucide-react';
+import { X, AlertTriangle, Loader2, Info, BarChart3 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { forecastService } from '@/services/forecastService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';

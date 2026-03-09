@@ -75,8 +75,13 @@ export const forecastService = {
         return response.data;
     },
 
-    async getModelMetrics(): Promise<any[]> {
-        const response = await api.get('/models/metrics');
+    async getModelMetrics(): Promise<any> {
+        const response = await api.get<any>('/models/metrics');
+        return response.data;
+    },
+
+    async getAlerts(): Promise<any[]> {
+        const response = await api.get<any[]>('/alerts/');
         return response.data;
     }
 };

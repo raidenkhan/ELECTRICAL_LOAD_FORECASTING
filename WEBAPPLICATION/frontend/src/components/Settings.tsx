@@ -455,6 +455,40 @@ function DataSettings({ showToast }: SettingsProps) {
                     />
                 </div>
             </SettingsCard>
+
+            <SettingsCard title="System Reset" description="Wipe all data and restore factory settings">
+                <div className="p-4 border border-red-500/20 bg-red-500/5 space-y-4">
+                    <div className="flex items-center gap-3 text-red-500">
+                        <AlertTriangle className="w-5 h-5" />
+                        <span className="text-sm font-bold uppercase tracking-wider">Danger Zone</span>
+                    </div>
+                    <p className="text-sm text-gray-400">
+                        This action will permanently delete all uploaded datasets and restore the system to its original
+                        Community Load baseline (~80 MW). This cannot be undone.
+                    </p>
+                    <button
+                        onClick={async () => {
+                            if (confirm('Are you absolutely sure you want to revert to the system baseline? All uploaded data will be lost.')) {
+                                try {
+                                    const response = await fetch('/api/v1/data/reset', { method: 'POST' });
+                                    if (response.ok) {
+                                        showToast('System reverted to baseline successfully', 'success');
+                                        window.location.reload(); // Refresh to clear stale data
+                                    } else {
+                                        showToast('Failed to reset system', 'error');
+                                    }
+                                } catch (err) {
+                                    showToast('Network error during reset', 'error');
+                                }
+                            }
+                        }}
+                        className="px-6 py-2 text-xs font-bold tracking-widest uppercase border border-red-500 text-red-500 hover:bg-red-500/10 transition-colors"
+                        style={{ fontFamily: 'var(--font-geist-mono)' }}
+                    >
+                        Revert to Community Baseline
+                    </button>
+                </div>
+            </SettingsCard>
         </div>
     );
 }

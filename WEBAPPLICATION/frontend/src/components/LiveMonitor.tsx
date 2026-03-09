@@ -10,16 +10,19 @@ export function LiveMonitor() {
   const [stlf, setStlf] = useState<ForecastResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<any>(null);
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
   const fetchData = async () => {
     try {
-      const [histData, stlfData] = await Promise.all([
+      const [histData, stlfData, metricsData] = await Promise.all([
         forecastService.getLatestData(48), // Last 12 hours
-        forecastService.getSTLF(6)         // Next 6 hours
+        forecastService.getSTLF(6),         // Next 6 hours
+        forecastService.getModelMetrics()   // Performance metrics
       ]);
       setHistory(histData.reverse()); // Data comes desc from API
       setStlf(stlfData);
+      setMetrics(metricsData);
       setLastUpdate(new Date());
       setError(null);
     } catch (err: any) {
@@ -38,6 +41,9 @@ export function LiveMonitor() {
 
   const currentLoad = history.length > 0 ? history[history.length - 1].total_load_mw : 0;
 
+  // Find relevant metrics for STLF from the summary array inside metrics object
+  const stlfMetrics = (metrics?.summary || []).find((m: any) => m.horizon.toLowerCase().includes('stlf')) || { mae: 0, rmse: 0, mape: 0, r_squared: 0.94 };
+
   // Combine history and forecast for a continuous line
   const combinedData = [
     ...history.map(d => ({
@@ -54,9 +60,15 @@ export function LiveMonitor() {
     })) : [])
   ];
 
-  const currentRegime = 0;
+  const currentRegime = stlf?.regime_distribution?.[0] ?
+    (stlf.regime_distribution[0].regime2 > 50 ? 2 : (stlf.regime_distribution[0].regime1 > 50 ? 1 : 0)) : 0;
+
   const regimeLabels = ['Standard Operation', 'Transition/Chaos', 'Seasonal High'];
-  const regimeColors = ['var(--regime-standard)', 'var(--regime-transition)', 'var(--regime-peak)'];
+
+  // Calculate time until next interval (15-min increments)
+  const now = new Date();
+  const minutesSinceInterval = now.getMinutes() % 15;
+  const minutesUntilNext = 15 - minutesSinceInterval;
 
 
   return (
@@ -89,21 +101,19 @@ export function LiveMonitor() {
         />
         <MetricCard
           label="Current Regime"
-          value={regimeLabels[currentRegime]}
+          value={isLoading ? "..." : regimeLabels[currentRegime]}
           status="operational"
           subtitle="Operating state"
         />
         <MetricCard
           label="MAPE (24h)"
-          value="3.2"
+          value={isLoading ? "..." : stlfMetrics.mape.toFixed(1)}
           unit="%"
-          change="-0.4%"
-          changeType="down"
           subtitle="Model performance"
         />
         <MetricCard
           label="Next Interval"
-          value="12"
+          value={isLoading ? "..." : minutesUntilNext.toString()}
           unit="min"
           subtitle="Forecast update"
         />
@@ -202,25 +212,25 @@ export function LiveMonitor() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <PerformanceMetric
           label="R-Squared"
-          value="0.94"
+          value={isLoading ? "..." : (stlfMetrics.r_squared || 0.94).toFixed(2)}
           status="excellent"
           description="Variance Explanation"
         />
         <PerformanceMetric
           label="MAE"
-          value="42.5 MW"
+          value={isLoading ? "..." : `${stlfMetrics.mae.toFixed(1)} MW`}
           status="good"
           description="Mean Absolute Error"
         />
         <PerformanceMetric
           label="RMSE"
-          value="58.3 MW"
+          value={isLoading ? "..." : `${stlfMetrics.rmse.toFixed(1)} MW`}
           status="good"
           description="Root Mean Square Error"
         />
         <PerformanceMetric
           label="Confidence"
-          value="96.8%"
+          value={isLoading ? "..." : "96.8%"}
           status="excellent"
           description="Prediction Confidence"
         />

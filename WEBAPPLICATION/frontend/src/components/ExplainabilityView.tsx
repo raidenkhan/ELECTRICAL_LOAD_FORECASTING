@@ -68,6 +68,25 @@ export function ExplainabilityView() {
         originalValue: shapData.values[i]
     })).sort((a, b) => Math.abs(b.value) - Math.abs(a.value)) : [];
 
+    // Feature descriptions for professional insights
+    const featureDescriptions: Record<string, string> = {
+        'LAG_96_LOAD': 'Historical 24h demand remains the strongest predictor for current grid pressure.',
+        'ROLLING_MEAN_24H': 'A shifting daily average load is trending the base value upwards.',
+        'HOUR_SIN': 'Cyclic damping expected during the early morning transition period.',
+        'HOUR_COS': 'Seasonal diurnal cycle positioning affects generation dispatch.',
+        'TEMP_T1_WINDING': 'Thermal stress on substation winding correlates with peak cooling demand.',
+        'NY6ZA_FLOW': 'Inter-node flow variations are impacting local voltage stability.',
+        'T2_GENERATION': 'Auxiliary generation capacity is dampening the net load requirement.'
+    };
+
+    const topInsights = chartData.slice(0, 3).map(d => ({
+        title: d.value > 0 ? "Primary Pressure" : "Negative Bias",
+        value: d.name,
+        impact: `${d.value > 0 ? '+' : ''}${d.value}MW`,
+        desc: featureDescriptions[d.name] || 'Significant feature attribution detected in the current forecast horizon.',
+        type: d.value > 0 ? 'pos' : 'neg'
+    }));
+
     return (
         <div className="space-y-8 pb-12 animate-in fade-in duration-700">
 
@@ -254,27 +273,22 @@ export function ExplainabilityView() {
                         </div>
 
                         <div className="space-y-6">
-                            <InsightItem
-                                title="Primary Driver"
-                                value="Lag_96_Load"
-                                impact="+45.2MW"
-                                desc="Historical 24h demand remains the strongest predictor for current grid pressure."
-                                type="pos"
-                            />
-                            <InsightItem
-                                title="Secondary Driver"
-                                value="Rolling_Mean_24h"
-                                impact="+28.5MW"
-                                desc="A 3.2% increase in the daily average load is shifting the base value upwards."
-                                type="pos"
-                            />
-                            <InsightItem
-                                title="Negative Bias"
-                                value="Hour_Sin"
-                                impact="-12.4MW"
-                                desc="Standard cyclic damping expected during the early morning transition period."
-                                type="neg"
-                            />
+                            {isLoading ? (
+                                <div className="space-y-6 animate-pulse">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="h-20 bg-muted/40" />
+                                    ))}
+                                </div>
+                            ) : topInsights.map((insight, idx) => (
+                                <InsightItem
+                                    key={idx}
+                                    title={insight.title}
+                                    value={insight.value}
+                                    impact={insight.impact}
+                                    desc={insight.desc}
+                                    type={insight.type}
+                                />
+                            ))}
                         </div>
                     </div>
 
