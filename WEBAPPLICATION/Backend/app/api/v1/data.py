@@ -219,24 +219,56 @@ async def get_latest_data(
     ]
 
 
+@router.post("/reset")
+async def reset_system_data(
+    db: AsyncSession = Depends(get_database)
+):
+    """
+    Factory Reset: Wipes all uploaded data and restores the original Community Load baseline.
+    """
+    import subprocess
+    import os
+    
+    try:
+        # Path to the restoration script
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "scripts", "restore_community_data.py")
+        
+        # Execute restoration script
+        result = subprocess.run(["python", script_path], capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            logger.error(f"Restoration script failed: {result.stderr}")
+            raise HTTPException(status_code=500, detail=f"Reset failed: {result.stderr}")
+            
+        return {"status": "success", "message": "System reverted to Community Load baseline"}
+        
+    except Exception as e:
+        logger.error(f"Reset error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"System reset failed: {str(e)}")
+
+
 async def _store_validated_data(df: pd.DataFrame, upload_id: int, db: AsyncSession):
     """Store validated data in the database."""
     try:
+        # Standardize columns for mapping
+        df = df.copy()
+        df.columns = [col.upper() for col in df.columns]
+        
         # Prepare data for insertion
         records = []
         
         for idx, row in df.iterrows():
             record = ValidatedData(
                 upload_id=upload_id,
-                timestamp=pd.to_datetime(row.get("timestamp")),
+                timestamp=pd.to_datetime(row.get("TIMESTAMP")),
                 total_load_mw=row.get("TOTAL_LOAD_MW"),
                 line1_mw=row.get("LINE1_MW"),
                 line2_mw=row.get("LINE2_MW"),
                 line3_mw=row.get("LINE3_MW"),
                 voltage_kv=row.get("VOLTAGE_KV"),
                 current_a=row.get("CURRENT_A"),
-                temperature_c=row.get("TEMP_C"),
-                frequency_hz=row.get("FREQ_HZ"),
+                temperature_c=row.get("TEMP_C") if row.get("TEMP_C") is not None else row.get("TEMPERATURE_C"),
+                frequency_hz=row.get("FREQ_HZ") if row.get("FREQ_HZ") is not None else row.get("FREQUENCY_HZ"),
                 is_anomaly=False,
                 validation_flags={}
             )

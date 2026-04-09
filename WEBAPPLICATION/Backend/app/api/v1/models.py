@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List, Any
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.forecast_service import ForecastService
-from app.schemas.forecast import MetricResponse
+from app.api.deps import get_database
 
 router = APIRouter()
 forecast_service = ForecastService()
@@ -16,13 +17,12 @@ async def get_model_status():
     return {"message": "Model endpoints - Coming in Stage 6"}
 
 
-@router.get("/metrics", response_model=List[MetricResponse])
-async def get_model_metrics():
+@router.get("/metrics")
+async def get_model_metrics(db: AsyncSession = Depends(get_database)):
     """
-    Get performance metrics for the forecasting models.
+    Get performance metrics for the forecasting models including trends and heatmaps.
     """
     try:
-        result = await forecast_service.get_performance_metrics()
-        return [MetricResponse(**m) for m in result]
+        return await forecast_service.get_performance_metrics(db)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

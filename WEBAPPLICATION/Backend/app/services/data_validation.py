@@ -11,7 +11,7 @@ class DataValidator:
     
     def __init__(self):
         # Validation thresholds
-        self.voltage_range = (100, 500)  # kV
+        self.voltage_range = (10, 500)  # kV (Relaxed to support distribution levels e.g. 33kV)
         self.current_range = (0, 10000)  # A
         self.frequency_range = (45.0, 55.0)  # Hz (Relaxed for verification)
         self.temperature_range = (-50, 100)  # °C
@@ -28,6 +28,10 @@ class DataValidator:
         Returns:
             Dictionary with validation results
         """
+        # Create a copy and standardize columns to uppercase for internal validation
+        df = df.copy()
+        df.columns = [col.upper() for col in df.columns]
+        
         results = {
             "total_rows": len(df),
             "valid_rows": 0,
@@ -39,9 +43,11 @@ class DataValidator:
         }
         
         try:
-            # 1. Check for required columns
-            required_cols = ["timestamp", "TOTAL_LOAD_MW"]
+            # 1. Check for required columns (now checking standardized uppercase)
+            required_cols = ["TIMESTAMP", "TOTAL_LOAD_MW"]
             missing_cols = [col for col in required_cols if col not in df.columns]
+            
+            # Fallback: check if 'timestamp' exists in any case if 'TIMESTAMP' is missing (redundant but safe)
             if missing_cols:
                 results["passed"] = False
                 results["error_messages"].append(f"Missing required columns: {missing_cols}")
