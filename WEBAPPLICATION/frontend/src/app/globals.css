@@ -1,308 +1,193 @@
 @import "tailwindcss";
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Backgrounds */
-  --bg-page: #F1F5F9;
-  --bg-surface: #F8FAFC;
-  --bg-sidebar: #E2E8F0;
-  --bg-secondary: #E2E8F0;
+  /* Brand Palette (Official GRIDCo Corporate Identity) */
+  --brand-blue: #003399;
+  /* GRIDCo Royal Blue */
+  --brand-gold: #FFCC00;
+  /* GRIDCo Energy Gold */
+  --brand-blue-vibrant: #004A99;
+  --brand-teal: #0EA5E9;
+  --brand-indigo: #6366F1;
+  /* Indigo accent — buttons, highlights */
 
+  --status-emerald: #10B981;
+  --status-amber: var(--brand-gold);
+  --status-crimson: #EF4444;
+  --status-violet: #8B5CF6;
 
+  /* Surfaces - Light Mode */
+  --bg-page: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --border-card: #CBD5E1;
+  --divider: #E2E8F0;
+  --surface-secondary: rgba(248, 250, 252, 0.7);
 
-  /* Glassmorphism - Light */
-  --glass-bg: rgba(255, 255, 255, 0.4);
-  --glass-blur: blur(64px);
-  --glass-border: 1px solid rgba(15, 23, 42, 0.08);
-  --glass-shadow: 0 4px 24px -4px rgba(15, 23, 42, 0.04);
-  --glass-inner-light: inset 0 1px 1px 0 rgba(255, 255, 255, 0.4);
-  --glass-lime-tint: rgba(59, 130, 246, 0.02);
-
-
-  /* Primary Accent - Electric Blue (Adjusted for Light) */
-  --lime-primary: #2563EB;
-  /* Blue for light mode legibility */
-  --lime-glow: 0 0 15px rgba(37, 99, 235, 0.1);
-
-  /* Text Colors - Light */
+  /* Text - Light Mode */
   --text-primary: #0F172A;
-  --text-secondary: #334155;
-  /* Darker for better contrast on light */
-  --text-tertiary: #475569;
-  /* Darker for better contrast on light */
-  --text-muted: #64748B;
-  /* Darker for better contrast on light */
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
 
+  /* Charts */
+  --chart-grid: #E2E8F0;
 
-  /* Semantic Colors */
-  --status-ok: #16A34A;
-  --status-warn: #D97706;
-  --status-error: #DC2626;
-  --status-info: #2563EB;
-
-  /* Regime Colors */
-  --regime-standard: #2563EB;
-  --regime-transition: #D97706;
-  --regime-peak: #DC2626;
-
-  /* Borders & Hover */
-  --border-primary: rgba(15, 23, 42, 0.06);
-
-  --border-active: var(--lime-primary);
-  --hover-bg: rgba(15, 23, 42, 0.04);
-  --hover-border: var(--lime-primary);
-
-  /* Inputs - Light */
-  --input-bg: rgba(15, 23, 42, 0.02);
-  --input-border: rgba(15, 23, 42, 0.08);
-  --input-focus-glow: rgba(37, 99, 235, 0.15);
-
-
-  /* Standard Tailwind Tokens */
+  /* Tailwind Tokens */
   --background: var(--bg-page);
   --foreground: var(--text-primary);
-  --card: var(--bg-surface);
-  --card-foreground: var(--text-primary);
-  --primary: var(--lime-primary);
-  --border: var(--border-primary);
-  --radius: 0px;
+  --primary: var(--brand-blue);
+  --radius: 0.5rem;
 }
 
 .dark {
-  /* Backgrounds */
-  --bg-page: #18181B;
-  /* Industrial Charcoal */
-  --bg-surface: #0F0F10;
-  /* Deep Card Background */
-  --bg-sidebar: #0F0F10;
-  --bg-secondary: #0F0F10;
-
-  /* Glassmorphism - Dark */
-  --glass-bg: rgba(15, 15, 16, 0.6);
-  --glass-blur: blur(64px);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.05);
-  --glass-shadow: 0 12px 48px -12px rgba(0, 0, 0, 0.5);
-  --glass-inner-light: inset 0 1px 1px 0 rgba(255, 255, 255, 0.03);
-  --glass-lime-tint: rgba(59, 130, 246, 0.04);
-
-
-  /* Primary Accent - Electric Blue */
-  --lime-primary: #3B82F6;
-  --lime-glow: 0 0 20px rgba(59, 130, 246, 0.25);
-
-  /* Text Colors - Dark */
-  --text-primary: #FAFAFA;
-  --text-secondary: #A1A1AA;
-  /* Brighter for dark mode */
-  --text-tertiary: #A1A1AA;
-  /* Brighter for dark mode */
-  --text-muted: #71717A;
-  /* Brighter for dark mode */
-
-  /* Semantic Colors */
-  --status-ok: #3B82F6;
-  --status-warn: #F59E0B;
-  --status-error: #FF4444;
-
-  /* Regime Colors */
-  --regime-standard: #2563EBCC;
-  --regime-transition: #F59E0BCC;
-  --regime-peak: #DC2626CC;
-
-  /* Borders & Hover */
-  --border-primary: rgba(255, 255, 255, 0.04);
-
-  --border-active: #3B82F6;
-  --hover-bg: rgba(255, 255, 255, 0.03);
-
-  /* Inputs - Dark */
-  --input-bg: rgba(255, 255, 255, 0.02);
-  --input-border: rgba(255, 255, 255, 0.06);
-  --input-focus-glow: rgba(59, 130, 246, 0.25);
-
-
+  --bg-page: #0A0F1E;
+  --bg-card: #111827;
+  --border-card: #1F2937;
+  --divider: #1F2937;
+  --surface-secondary: #1A2236;
+  --brand-indigo: #818CF8;
+  /* Lighter indigo for dark-mode contrast */
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  --chart-grid: #1F2937;
   --background: var(--bg-page);
   --foreground: var(--text-primary);
-
-  /* Native UI Controls */
+  --primary: #3B82F6;
   color-scheme: dark;
 }
-
-/* Ensure dropdown options are dark in dark mode */
-.dark option {
-  background-color: #18181b !important;
-  /* var(--bg-page) hardcoded for browser safety */
-  color: #fafafa !important;
-}
-
-.dark select {
-  color-scheme: dark;
-}
-
-
-
-
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-input-background: var(--input-background);
-  --color-switch-background: var(--switch-background);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-gold: var(--brand-gold);
+  --color-teal: var(--brand-teal);
+  --color-emerald: var(--status-emerald);
+  --color-amber: var(--status-amber);
+  --color-crimson: var(--status-crimson);
+  --color-violet: var(--status-violet);
+  --color-border: var(--border-card);
 }
 
 @layer base {
   * {
-    @apply outline-none border-border/10;
+    @apply border-border;
   }
-
-  *:focus-visible {
-    @apply outline-2 outline-primary/30 outline-offset-2;
-  }
-
-
 
   body {
     @apply bg-background text-foreground;
-    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    line-height: 1.6;
-    letter-spacing: -0.01em;
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -ms-text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .display-num {
+    font-size: 36px;
+    font-weight: 600;
+    font-family: var(--font-inter), sans-serif;
+  }
+
+  .headline {
+    font-size: 20px;
+    font-weight: 600;
+    font-family: var(--font-inter), sans-serif;
+  }
+
+  .title {
+    font-size: 15px;
+    font-weight: 500;
+    font-family: var(--font-inter), sans-serif;
+  }
+
+  .body-text {
+    font-size: 14px;
+    font-weight: 400;
+    font-family: var(--font-inter), sans-serif;
+  }
+
+  .caption {
+    font-size: 12px;
+    font-weight: 400;
+    font-family: var(--font-inter), sans-serif;
+  }
+
+  .metric-num {
+    font-family: var(--font-jetbrains-mono), monospace;
+    font-size: 28px;
+    font-weight: 500;
+  }
+
+  .data-num {
+    font-family: var(--font-jetbrains-mono), monospace;
+    font-size: 14px;
+    font-weight: 400;
+  }
+
+  .micro-num {
+    font-family: var(--font-jetbrains-mono), monospace;
+    font-size: 11px;
+    font-weight: 400;
   }
 }
 
-/* Global Typography Spacing Fixes */
-[style*="fontFamily: var(--font-geist-mono)"],
-.font-mono {
-  letter-spacing: 0.02em !important;
-  line-height: 1.5 !important;
+.glass-panel {
+  /* Reduced opacity so the background gradient/image bleeds through in light mode */
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(203, 213, 225, 0.45);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.06);
+  border-radius: var(--radius);
 }
 
-[class*="tracking-widest"],
-[style*="letterSpacing"] {
-  letter-spacing: 0.15em !important;
+.dark .glass-panel {
+  background: rgba(17, 24, 39, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
+@keyframes pulse-dot {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
 
-/**
- * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
- */
-@layer base {
-  :where(:not(:has([class*=' text-']), :not(:has([class^='text-'])))) {
-    h1 {
-      font-size: var(--text-2xl);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
-    }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
 
-    h2 {
-      font-size: var(--text-xl);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
-    }
-
-    h3 {
-      font-size: var(--text-lg);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
-    }
-
-    h4 {
-      font-size: var(--text-base);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
-    }
-
-    label {
-      font-size: var(--text-base);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
-    }
-
-    button {
-      font-size: var(--text-base);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
-    }
-
-    input {
-      font-size: var(--text-base);
-      font-weight: var(--font-weight-normal);
-      line-height: 1.5;
-    }
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
-html {
-  font-size: 16px;
+.animate-pulse-live {
+  animation: pulse-dot 1.5s ease-in-out infinite;
 }
 
-/* Landing page sections get slightly larger base font */
-#technology,
-#features,
-#kalman,
-#api,
-footer {
-  font-size: 17px;
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.glass-morphism {
-  background: var(--glass-bg) !important;
-  backdrop-filter: var(--glass-blur);
-  border: var(--glass-border) !important;
-  box-shadow: var(--glass-shadow), var(--glass-inner-light) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.glass-morphism::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
-  pointer-events: none;
+::-webkit-scrollbar-thumb {
+  background: var(--divider);
+  border-radius: 3px;
 }
 
-.glass-morphism:hover {
-  border-color: rgba(59, 130, 246, 0.15) !important;
-  background: rgba(255, 255, 255, 0.02) !important;
-}
-
-.dark .glass-morphism:hover {
-  border-color: rgba(59, 130, 246, 0.2) !important;
-  box-shadow: var(--glass-shadow), inset 0 1px 1px 0 rgba(255, 255, 255, 0.05), var(--lime-glow) !important;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }

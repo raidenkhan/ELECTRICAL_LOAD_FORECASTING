@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Info, CheckCircle, Clock, X, Loader2, AlertCircle, RefreshCcw, Download, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, Info, X, Loader2, AlertCircle, RefreshCcw, Clock, CheckCircle2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { forecastService } from '../services/forecastService';
 
@@ -41,177 +41,82 @@ export function ActiveAlerts() {
     setAlerts(prev => prev.filter(a => a.id !== id));
   };
 
-  const handleAction = (action: string, alertTitle: string) => {
-    console.log(`Action: ${action} on ${alertTitle}`);
-  };
-
-  const alertConfig = {
-    critical: {
-      icon: AlertTriangle,
-      color: 'var(--status-error)',
-      bg: 'rgba(239, 68, 68, 0.08)',
-      label: 'CRITICAL'
-    },
-    warning: {
-      icon: AlertTriangle,
-      color: 'var(--status-warning)',
-      bg: 'rgba(245, 158, 11, 0.08)',
-      label: 'WARNING'
-    },
-    info: {
-      icon: Info,
-      color: 'var(--text-secondary)',
-      bg: 'rgba(255, 255, 255, 0.03)',
-      label: 'INFO'
-    },
-    success: {
-      icon: CheckCircle2,
-      color: 'var(--status-ok)',
-      bg: 'rgba(16, 185, 129, 0.08)',
-      label: 'RESOLVED'
-    }
+  const alertConfig: Record<string, { icon: any, color: string, label: string }> = {
+    critical: { icon: AlertCircle, color: 'var(--status-crimson)', label: 'CRITICAL' },
+    warning: { icon: AlertTriangle, color: 'var(--status-amber)', label: 'WARNING' },
+    info: { icon: Info, color: 'var(--brand-indigo)', label: 'INFO' },
+    success: { icon: CheckCircle2, color: 'var(--status-emerald)', label: 'SOLVED' }
   };
 
   return (
-    <div className="border glass-morphism overflow-hidden relative"
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderColor: 'var(--border-primary)',
-        backdropFilter: 'var(--glass-blur)',
-        boxShadow: 'var(--glass-shadow)'
-      }}>
-
-      {/* Decorative Corner */}
-      <div className="absolute top-0 right-0 w-12 h-12 overflow-hidden pointer-events-none opacity-40">
-        <div className="absolute top-0 right-0 w-[1px] h-4 bg-white" />
-        <div className="absolute top-0 right-0 w-4 h-[1px] bg-white" />
-      </div>
-
-      <div
-        className="flex items-center justify-between px-8 py-6 border-b"
-        style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-2 h-5" style={{ backgroundColor: 'var(--lime-primary)' }} />
-          <h3 className="text-sm font-bold tracking-[0.3em] uppercase" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-geist-mono)' }}>
-            Active Alerts Grid
-          </h3>
+    <div className="flex flex-col gap-4">
+      
+      {error && (
+        <div className="px-4 py-2 bg-[var(--status-crimson)]/10 text-[var(--status-crimson)] text-[11px] font-bold uppercase tracking-widest rounded flex items-center gap-2">
+          <AlertCircle className="w-4 h-4" /> {error}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={fetchAlerts}
-            disabled={isLoading}
-            className="p-2 border border-border hover:bg-white/5 disabled:opacity-50"
-            title="Refresh feed"
-          >
+      )}
+
+      <div className="flex items-center justify-between mb-2">
+         <span className="micro-num text-[var(--text-muted)] uppercase tracking-widest">Live Alerts Grid</span>
+         <button onClick={fetchAlerts} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
             <RefreshCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-          <button
-            className="text-[11px] font-bold tracking-widest uppercase px-4 py-2 border transition-all hover:bg-white/5"
-            style={{
-              color: 'var(--text-secondary)',
-              borderColor: 'var(--border-primary)',
-              fontFamily: 'var(--font-geist-mono)'
-            }}
-          >
-            View Archive
-          </button>
-        </div>
+         </button>
       </div>
 
-      <div className="divide-y" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
-        {error && (
-          <div className="px-8 py-4 bg-red-500/5 text-red-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" /> {error}
-          </div>
-        )}
-
+      <div className="space-y-3">
         {isLoading && alerts.length === 0 ? (
-          <div className="px-8 py-12 flex flex-col items-center justify-center space-y-4">
-            <Loader2 className="w-8 h-8 animate-spin text-lime-primary opacity-20" />
-            <span className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">Syncing Alert Feed...</span>
+          <div className="py-12 flex flex-col items-center justify-center gap-3">
+            <Loader2 className="w-6 h-6 animate-spin text-[var(--brand-indigo)] opacity-40" />
+            <span className="micro-num animate-pulse uppercase">Syncing Alerts...</span>
           </div>
         ) : alerts.length === 0 ? (
-          <div className="px-8 py-12 flex flex-col items-center justify-center space-y-4">
-            <CheckCircle2 className="w-8 h-8 text-emerald-500 opacity-20" />
-            <span className="text-[10px] font-black tracking-widest text-muted-foreground uppercase">All Systems Optimal</span>
+          <div className="py-8 text-center glass-panel border-dashed">
+             <span className="micro-num text-[var(--text-muted)] uppercase">All Systems Nominal</span>
           </div>
         ) : (
           alerts.map((alert) => {
-            const config = alertConfig[alert.type as keyof typeof alertConfig] || alertConfig.info;
+            const config = alertConfig[alert.type] || alertConfig.info;
             const Icon = config.icon;
 
             return (
-              <div
-                key={alert.id}
-                className="px-8 py-6 hover:bg-white/[0.02] transition-colors group"
-              >
-                <div className="flex items-start gap-4">
-                  <div
-                    className="w-9 h-9 flex items-center justify-center flex-shrink-0 border"
-                    style={{
-                      backgroundColor: config.bg,
-                      borderColor: `${config.color}33`,
-                      color: config.color
-                    }}
-                  >
-                    <Icon className="w-4 h-4" />
+              <div key={alert.id} className="glass-panel p-4 flex flex-col gap-3 relative group">
+                <button 
+                  onClick={() => handleDismiss(alert.id)}
+                  className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <div className={`p-1.5 rounded bg-[var(--surface-secondary)] border border-[var(--divider)] ${alert.type === 'critical' ? 'animate-pulse' : ''}`}>
+                    <Icon className={`w-4 h-4`} style={{ color: config.color }} />
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 mb-1.5">
-                      <div className="flex items-center gap-2.5 flex-wrap">
-                        <span
-                          className="text-[10px] font-bold px-1.5 py-0.5 border"
-                          style={{
-                            borderColor: `${config.color}33`,
-                            color: config.color,
-                            fontFamily: 'var(--font-geist-mono)'
-                          }}
-                        >
-                          {config.label}
-                        </span>
-                        <h4 className="text-[12px] font-bold" style={{ color: 'var(--text-primary)' }}>
-                          {alert.title}
-                        </h4>
-                      </div>
-                      <button
-                        className="p-1 hover:bg-white/5 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
-                        title="Dismiss"
-                        onClick={() => handleDismiss(alert.id)}
-                      >
-                        <X className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-                      </button>
-                    </div>
-
-                    <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
-                      {alert.detail}
-                    </p>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {alert.actions.map((action, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleAction(action.label, alert.title)}
-                            className="text-[11px] px-3 py-1.5 transition-all font-bold uppercase tracking-wider border active:scale-95"
-                            style={{
-                              backgroundColor: action.primary ? config.color : 'transparent',
-                              color: action.primary ? '#000' : 'var(--text-secondary)',
-                              borderColor: action.primary ? config.color : 'var(--border-primary)',
-                              fontFamily: 'var(--font-geist-mono)'
-                            }}
-                          >
-                            {action.label}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-geist-mono)' }}>
-                        <Clock className="w-3.5 h-3.5" />
-                        {alert.time.toUpperCase()}
-                      </div>
-                    </div>
+                  <div className="flex flex-col">
+                     <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold tracking-tighter px-1 rounded bg-[var(--divider)]" style={{ color: config.color }}>{config.label}</span>
+                        <h4 className="text-[13px] font-bold text-[var(--text-primary)]">{alert.title}</h4>
+                     </div>
                   </div>
+                </div>
+
+                <p className="text-[12px] text-[var(--text-secondary)] leading-tight">{alert.detail}</p>
+
+                <div className="flex items-center justify-between mt-1">
+                   <div className="flex gap-2">
+                      {alert.actions.map((action, i) => (
+                        <button key={i} className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-all
+                          ${action.primary 
+                            ? 'bg-[var(--brand-indigo)] text-white' 
+                            : 'bg-[var(--surface-secondary)] text-[var(--text-secondary)] border border-[var(--divider)] hover:text-[var(--text-primary)]'}
+                        `}>
+                          {action.label}
+                        </button>
+                      ))}
+                   </div>
+                   <div className="flex items-center gap-1.5 micro-num text-[var(--text-muted)]">
+                      <Clock className="w-3 h-3" /> {alert.time}
+                   </div>
                 </div>
               </div>
             );
@@ -219,20 +124,9 @@ export function ActiveAlerts() {
         )}
       </div>
 
-      <div
-        className="px-6 py-4 border-t text-center"
-        style={{
-          borderColor: 'rgba(255, 255, 255, 0.05)',
-          backgroundColor: 'rgba(255, 255, 255, 0.01)'
-        }}
-      >
-        <button
-          className="text-[11px] font-bold tracking-widest uppercase transition-colors text-primary hover:text-primary-light"
-          style={{ fontFamily: 'var(--font-geist-mono)' }}
-        >
-          System Notifications Preferences
-        </button>
-      </div>
+      <button className="text-center w-full py-2 micro-num text-[var(--text-muted)] uppercase hover:text-[var(--text-primary)] transition-colors mt-2">
+        View Archive Cluster
+      </button>
     </div>
   );
 }

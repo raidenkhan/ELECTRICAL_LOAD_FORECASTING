@@ -78,14 +78,14 @@ export function ForecastChart({ data = [], isLoading = false }: ForecastChartPro
           {isLoading ? (
             <div className="flex items-center gap-2 px-3 py-1.5 border" style={{ borderColor: 'var(--border-primary)' }}>
               <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--status-info)' }} />
-              <span className="text-xs font-semibold" style={{ color: 'var(--status-info)' }}>
+              <span className="text-sm font-semibold" style={{ color: 'var(--status-info)' }}>
                 LOADING
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-2 px-3 py-1.5 border" style={{ borderColor: 'var(--border-primary)' }}>
               <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--status-ok)' }} />
-              <span className="text-xs font-semibold" style={{ color: 'var(--status-ok)' }}>
+              <span className="text-sm font-semibold" style={{ color: 'var(--status-ok)' }}>
                 LIVE
               </span>
             </div>
@@ -99,7 +99,7 @@ export function ForecastChart({ data = [], isLoading = false }: ForecastChartPro
                 color: showConfigPanel ? 'var(--lime-primary)' : 'var(--text-secondary)',
                 borderColor: showConfigPanel ? 'var(--lime-primary)' : 'var(--border-primary)',
                 fontFamily: 'var(--font-geist-mono)',
-                fontSize: '11px',
+                fontSize: '13px',
                 fontWeight: 'bold',
                 textTransform: 'uppercase'
               }}
@@ -121,7 +121,7 @@ export function ForecastChart({ data = [], isLoading = false }: ForecastChartPro
               >
                 {/* Panel Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border-primary)' }}>
-                  <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-geist-mono)' }}>
+                  <span className="text-[13px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-geist-mono)' }}>
                     Chart Settings
                   </span>
                   <button onClick={() => setShowConfigPanel(false)} className="hover:opacity-60 transition-opacity">
@@ -142,8 +142,8 @@ export function ForecastChart({ data = [], isLoading = false }: ForecastChartPro
                       onClick={() => setState((p: boolean) => !p)}
                     >
                       <div>
-                        <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-geist-mono)' }}>{label}</p>
-                        <p className="text-[9px] uppercase opacity-40 mt-0.5" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-geist-mono)' }}>{desc}</p>
+                        <p className="text-[13px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-geist-mono)' }}>{label}</p>
+                        <p className="text-[11px] uppercase opacity-60 mt-0.5" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-geist-mono)' }}>{desc}</p>
                       </div>
                       {/* Toggle pill */}
                       <div
@@ -193,14 +193,14 @@ export function ForecastChart({ data = [], isLoading = false }: ForecastChartPro
               <XAxis
                 dataKey="time"
                 stroke="var(--text-tertiary)"
-                style={{ fontSize: '10px', fontFamily: 'var(--font-geist-mono)' }}
+                style={{ fontSize: '12px', fontFamily: 'var(--font-geist-mono)' }}
                 tickLine={false}
                 axisLine={{ stroke: '#27272A' }}
                 interval={Math.floor(displayData.length / 6)}
               />
               <YAxis
                 stroke="var(--text-tertiary)"
-                style={{ fontSize: '11px', fontFamily: 'var(--font-geist-mono)' }}
+                style={{ fontSize: '12px', fontFamily: 'var(--font-geist-mono)' }}
                 tickLine={false}
                 axisLine={{ stroke: '#27272A' }}
                 domain={['auto', 'auto']}
@@ -208,7 +208,7 @@ export function ForecastChart({ data = [], isLoading = false }: ForecastChartPro
                   value: 'LOAD (MW)',
                   angle: -90,
                   position: 'insideLeft',
-                  style: { fill: 'var(--text-muted)', fontSize: '10px', fontWeight: 600, fontFamily: 'var(--font-geist-mono)' }
+                  style: { fill: 'var(--text-muted)', fontSize: '11px', fontWeight: 600, fontFamily: 'var(--font-geist-mono)' }
                 }}
               />
 
@@ -217,7 +217,7 @@ export function ForecastChart({ data = [], isLoading = false }: ForecastChartPro
                   backgroundColor: 'var(--bg-surface)',
                   border: '1px solid var(--border-primary)',
                   borderRadius: '0px',
-                  fontSize: '11px',
+                  fontSize: '13px',
                   fontFamily: 'var(--font-geist-mono)',
                   boxShadow: 'var(--glass-shadow)',
                   padding: '8px 12px'
@@ -305,13 +305,13 @@ export function ForecastChart({ data = [], isLoading = false }: ForecastChartPro
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <div className="w-3 h-0.5" style={{ backgroundColor: 'var(--lime-primary)' }} />
-              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-geist-mono)' }}>
+              <span className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-geist-mono)' }}>
                 Forecast
               </span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3" style={{ backgroundColor: 'var(--lime-primary)', opacity: 0.15 }} />
-              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-geist-mono)' }}>
+              <span className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-geist-mono)' }}>
                 Confidence
               </span>
             </div>

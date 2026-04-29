@@ -1,6 +1,5 @@
-import { ChevronRight, Bell, User, LogOut, ChevronDown, Sun, Moon } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
-
+import { Bell, User, ChevronRight, Moon, Sun, Activity } from 'lucide-react';
+import { useSystem } from '@/context/SystemContext';
 
 interface TopBarProps {
   breadcrumbs: string[];
@@ -8,195 +7,109 @@ interface TopBarProps {
   onLogout?: () => void;
   theme?: string;
   onThemeToggle?: () => void;
+  viewMode?: 'analytics' | 'control-room';
+  onViewModeChange?: (mode: 'analytics' | 'control-room') => void;
 }
 
-export function TopBar({ breadcrumbs, userName = 'John Doe', onLogout, theme, onThemeToggle }: TopBarProps) {
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([
-    { id: 1, text: 'System load peaking at 98%', time: '2m ago', read: false },
-    { id: 2, text: 'New forecast model available', time: '1h ago', read: false },
-    { id: 3, text: 'Database backup completed', time: '3h ago', read: true },
-  ]);
+export function TopBar({ 
+  breadcrumbs, 
+  onLogout, 
+  theme, 
+  onThemeToggle, 
+  viewMode, 
+  onViewModeChange 
+}: TopBarProps) {
+  const { lastSync, secondsSinceSync, isStale } = useSystem();
 
-  const notifRef = useRef<HTMLDivElement>(null);
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  const formatTime = (date: Date | null) => {
+    if (!date) return '--:--:--';
+    return date.toLocaleTimeString([], { hour12: false });
+  };
 
-  // Close dropdowns on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
-        setShowNotifications(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setShowUserMenu(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  const handleMarkAsRead = (id: number) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const getSyncColor = () => {
+    if (isStale) return 'text-[var(--status-crimson)]';
+    if (secondsSinceSync > 300) return 'text-[var(--status-amber)]'; // 5 mins
+    return 'text-[var(--status-emerald)]';
   };
 
   return (
-    <div
-      className="px-8 flex items-center justify-between border-b glass-morphism z-40"
-      style={{
-        height: '72px',
-        backgroundColor: 'var(--bg-surface)',
-        borderColor: 'var(--border-primary)',
-        backdropFilter: 'var(--glass-blur)',
-        boxShadow: 'var(--glass-shadow)',
-        position: 'relative'
-      }}
-    >
+    <div className="h-[52px] px-6 flex items-center justify-between border-b bg-white/40 dark:bg-gray-900/40 backdrop-blur-2xl border-white/10 dark:border-white/5 z-40">
 
-      {/* Breadcrumbs */}
-      <div className="flex items-center gap-3">
+      {/* Breadcrumb Cluster */}
+      <div className="flex items-center gap-2">
         {breadcrumbs.map((crumb, index) => (
-          <div key={index} className="flex items-center gap-3">
-            {index > 0 && (
-              <ChevronRight className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
-            )}
-            <span
-              className="text-[12px] font-bold uppercase tracking-widest"
-              style={{
-                color: index === breadcrumbs.length - 1 ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                fontFamily: 'var(--font-geist-mono)'
-              }}
-            >
+          <div key={crumb} className="flex items-center gap-2">
+            {index > 0 && <ChevronRight className="w-3 h-3 text-[var(--text-muted)]" />}
+            <span className={`text-[12px] font-medium tracking-tight
+              ${index === breadcrumbs.length - 1 ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}
+            `}>
               {crumb}
             </span>
           </div>
         ))}
       </div>
 
-
-      {/* User Actions */}
-      <div className="flex items-center gap-4">
-        {/* Theme Toggle */}
+      {/* Center Toggle (Themed Tactical Switch) */}
+      <div className="hidden lg:flex items-center bg-[var(--surface-secondary)]/60 p-1 rounded-sm border border-[var(--divider)]">
         <button
+          onClick={() => onViewModeChange?.('analytics')}
+          className={`px-4 py-1.5 rounded-sm text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-200
+            ${viewMode === 'analytics' 
+              ? 'bg-[var(--brand-blue)] text-white shadow-[0_0_15px_rgba(0,51,153,0.3)]' 
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+        >
+          Analytics
+        </button>
+        <button
+          onClick={() => onViewModeChange?.('control-room')}
+          className={`px-4 py-1.5 rounded-sm text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-200
+            ${viewMode === 'control-room' 
+              ? 'bg-[var(--brand-blue)] text-white shadow-[0_0_15px_rgba(0,51,153,0.3)]' 
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+        >
+          Control Room
+        </button>
+      </div>
+
+      {/* Right Cluster */}
+      <div className="flex items-center gap-4">
+        {/* Heartbeat & Sync Status */}
+        <div className="hidden md:flex items-center gap-3 mr-4">
+          <div className="flex flex-col items-end">
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${getSyncColor()}`}>
+                {isStale ? 'Stale' : secondsSinceSync < 60 ? 'Live' : 'Sync OK'}
+              </span>
+              <div className={`w-1.5 h-1.5 rounded-full ${isStale ? 'bg-red-500' : 'bg-emerald-500'} animate-pulse shadow-[0_0_8px] shadow-emerald-500/50`} />
+            </div>
+            <span className="text-[9px] font-mono text-[var(--text-muted)] uppercase tracking-tighter">
+              T+{secondsSinceSync}s
+            </span>
+          </div>
+          <Activity className={`w-4 h-4 ${getSyncColor()} opacity-40`} />
+        </div>
+
+        <button 
           onClick={onThemeToggle}
-          className="w-9 h-9 border flex items-center justify-center transition-colors hover:bg-white/5 active:scale-95"
-          style={{
-            borderColor: 'var(--border-primary)',
-            color: 'var(--text-tertiary)',
-            borderRadius: 0
-          }}
-          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
         >
           {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
 
-        {/* Notifications */}
-        <div className="relative" ref={notifRef}>
-          <button
-            className="w-9 h-9 border flex items-center justify-center transition-colors hover:bg-white/5 active:scale-95 relative"
-            style={{ borderColor: 'var(--border-primary)', borderRadius: 0 }}
-            onClick={() => setShowNotifications(!showNotifications)}
-          >
-            <Bell className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
-            {unreadCount > 0 && (
-              <div
-                className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[10px] font-bold"
-                style={{
-                  backgroundColor: 'var(--status-error)',
-                  color: '#000',
-                  fontFamily: 'var(--font-geist-mono)'
-                }}
-              >
-                {unreadCount}
-              </div>
-            )}
-          </button>
+        <button className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] relative">
+          <Bell className="w-4 h-4" />
+          <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[var(--status-crimson)] rounded-full" />
+        </button>
 
-          {/* Notifications Dropdown */}
-          {showNotifications && (
-            <div className="absolute top-12 right-0 w-80 border glass-morphism z-50 animate-in fade-in slide-in-from-top-2"
-              style={{
-                backgroundColor: 'var(--bg-surface)',
-                borderColor: 'var(--border-primary)',
-                boxShadow: 'var(--glass-shadow)'
-              }}>
-              <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border-primary)' }}>
-                <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-geist-mono)' }}>Notifications</h3>
-                <button onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))} className="text-[10px] uppercase hover:underline" style={{ color: 'var(--lime-primary)' }}>Mark all read</button>
-              </div>
-              <div className="max-h-64 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <div className="p-8 text-center text-xs opacity-50">No new notifications</div>
-                ) : (
-                  notifications.map(n => (
-                    <div key={n.id} onClick={() => handleMarkAsRead(n.id)} className="p-4 border-b last:border-0 hover:bg-white/5 cursor-pointer transition-colors relative" style={{ borderColor: 'var(--border-primary)', opacity: n.read ? 0.5 : 1 }}>
-                      {!n.read && <div className="absolute top-4 left-2 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--lime-primary)' }} />}
-                      <p className="text-xs font-medium mb-1 pl-2" style={{ color: 'var(--text-primary)' }}>{n.text}</p>
-                      <p className="text-[10px] opacity-50 pl-2 uppercase tracking-wide" style={{ fontFamily: 'var(--font-geist-mono)' }}>{n.time}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        <div className="h-6 w-px bg-[var(--divider)]" />
 
-        {/* User Menu */}
-        <div className="relative pl-2 border-l" style={{ borderColor: 'var(--border-primary)' }} ref={userMenuRef}>
-          <div
-            className="flex items-center gap-4 cursor-pointer hover:bg-white/5 p-1 transition-colors"
-            onClick={() => setShowUserMenu(!showUserMenu)}
-          >
-            <div className="text-right hidden md:block">
-              <p className="text-[11px] font-bold uppercase tracking-tight" style={{
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-geist-mono)'
-              }}>
-                {userName}
-              </p>
-              <p className="text-[9px] font-bold uppercase tracking-widest opacity-40 ml-auto" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-geist-mono)' }}>
-                Online
-              </p>
-            </div>
-
-            <div
-              className="w-9 h-9 border flex items-center justify-center transition-transform duration-200"
-              style={{
-                borderColor: 'var(--border-primary)',
-                borderRadius: 0,
-                transform: showUserMenu ? 'rotate(180deg)' : 'none'
-              }}
-            >
-              <ChevronDown className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
-            </div>
+        <button onClick={onLogout} className="flex items-center gap-2 pl-2">
+          <div className="w-7 h-7 rounded-sm bg-[var(--divider)] flex items-center justify-center">
+            <User className="w-4 h-4 text-[var(--text-secondary)]" />
           </div>
-
-          {/* User Dropdown */}
-          {showUserMenu && (
-            <div className="absolute top-12 right-0 w-48 border glass-morphism z-50 animate-in fade-in slide-in-from-top-2"
-              style={{
-                backgroundColor: 'var(--bg-surface)',
-                borderColor: 'var(--border-primary)',
-                boxShadow: 'var(--glass-shadow)'
-              }}>
-              <div className="py-1">
-                <button className="w-full text-left px-4 py-3 text-xs font-bold uppercase tracking-wider hover:bg-white/5 transition-colors flex items-center gap-3" style={{ color: 'var(--text-secondary)' }}>
-                  <User className="w-3.5 h-3.5" /> Profile
-                </button>
-                <button
-                  className="w-full text-left px-4 py-3 text-xs font-bold uppercase tracking-wider hover:bg-white/5 transition-colors flex items-center gap-3 border-t"
-                  style={{ color: 'var(--status-error)', borderColor: 'var(--border-primary)' }}
-                  onClick={onLogout}
-                >
-                  <LogOut className="w-3.5 h-3.5" /> Sign Out
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
+        </button>
       </div>
     </div>
   );

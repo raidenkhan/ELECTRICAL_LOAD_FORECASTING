@@ -1,0 +1,136 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Brand Palette */
+  --brand-indigo: #4F46E5;
+  --brand-teal: #0EA5E9;
+  --status-emerald: #10B981;
+  --status-amber: #F59E0B;
+  --status-crimson: #EF4444;
+  --status-violet: #8B5CF6;
+
+  /* Surfaces - Light Mode (Planning) */
+  --bg-page: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --border-card: #E2E8F0;
+  --divider: #F1F5F9;
+  --surface-secondary: #F8FAFC;
+  
+  /* Text - Light Mode */
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+  
+  /* Charts */
+  --chart-grid: #E2E8F0;
+
+  /* Standard Tailwind Tokens */
+  --background: var(--bg-page);
+  --foreground: var(--text-primary);
+  --primary: var(--brand-indigo);
+  --radius: 0.5rem;
+}
+
+.dark {
+  /* Surfaces - Dark Mode (Control Room) */
+  --bg-page: #0A0F1E;
+  --bg-card: #111827;
+  --border-card: #1F2937;
+  --divider: #1F2937;
+  --surface-secondary: #1A2236;
+
+  /* Text - Dark Mode */
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+
+  /* Charts */
+  --chart-grid: #1F2937;
+
+  --background: var(--bg-page);
+  --foreground: var(--text-primary);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-indigo: var(--brand-indigo);
+  --color-teal: var(--brand-teal);
+  --color-emerald: var(--status-emerald);
+  --color-amber: var(--status-amber);
+  --color-crimson: var(--status-crimson);
+  --color-violet: var(--status-violet);
+  --color-border: var(--border-card);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Typography Scale */
+  .display-num { font-size: 36px; font-weight: 600; font-family: 'Inter', sans-serif; }
+  .headline { font-size: 20px; font-weight: 600; font-family: 'Inter', sans-serif; }
+  .title { font-size: 15px; font-weight: 500; font-family: 'Inter', sans-serif; }
+  .body-text { font-size: 14px; font-weight: 400; font-family: 'Inter', sans-serif; }
+  .caption { font-size: 12px; font-weight: 400; font-family: 'Inter', sans-serif; }
+  
+  /* Numeric Data Scale (JetBrains Mono) - Non-negotiable */
+  .metric-num { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 500; }
+  .data-num { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 400; }
+  .micro-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 400; }
+}
+
+/* Glassmorphism Rule (Subtle, professional) */
+.glass-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.dark .glass-panel {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(12px);
+}
+
+/* Pulsing dot animation */
+@keyframes pulse-dot {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.animate-pulse-live {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--divider);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

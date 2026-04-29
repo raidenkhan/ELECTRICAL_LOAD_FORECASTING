@@ -1,178 +1,245 @@
+import React from 'react';
+import { StatusBadge } from './StatusBadge';
 import { ForecastResponse } from '@/services/forecastService';
-
-interface DayForecast {
-  day: string;
-  date: string;
-  peakMW: number;
-  time: string;
-  exceedsThreshold: boolean;
-}
+import { 
+  ResponsiveContainer, 
+  ComposedChart, 
+  Area, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip 
+} from 'recharts';
 
 interface WeeklyForecastProps {
-  data: ForecastResponse | null;
-  isLoading: boolean;
+  data?: ForecastResponse | null;
+  isLoading?: boolean;
 }
+
+// Helper to generate a simple SVG sparkline path
+const generateSparkline = (pointsData?: number[]) => {
+  if (!pointsData || pointsData.length === 0) {
+    const points = Array.from({ length: 24 }).map((_, i) => {
+      const y = 30 + Math.sin(i / 12 * Math.PI) * 15 + Math.random() * 5;
+      return `${i * 10},${y}`;
+    });
+    return `M ${points.join(' L ')}`;
+  }
+  
+  const max = Math.max(...pointsData);
+  const min = Math.min(...pointsData);
+  const range = max - min || 1;
+  
+  const points = pointsData.map((val, i) => {
+    // Normalize to 0-40 height
+    const normalized = ((val - min) / range) * 40;
+    const y = 50 - normalized; // Invert Y for SVG
+    const x = (i / (pointsData.length - 1)) * 230;
+    return `${x},${y}`;
+  });
+
+  return `M ${points.join(' L ')}`;
+};
 
 export function WeeklyForecast({ data, isLoading }: WeeklyForecastProps) {
-  // Process LTLF data into 7-day view
-  const processWeeklyData = (ltlf: ForecastResponse): DayForecast[] => {
-    const days: DayForecast[] = [];
-    const threshold = 1600;
+  // Parse up to 7 days from the high-res timestamps
+  const days: any[] = [];
+  
+  if (data && data.timestamps && data.forecast_mw) {
+    let currentDayStr = '';
+    let currentDayPoints: number[] = [];
+    let currentDayPeak = 0;
+    let peakTimestampStr = '';
+    let parsedDaysCount = 0;
 
-    // Group by date (first 7 unique days)
-    const groupedByDate: Record<string, { max: number, time: string }> = {};
-    const uniqueDates: string[] = [];
+    for (let i = 0; i < data.timestamps.length; i++) {
+       const ts = data.timestamps[i];
+       const dateObj = new Date(ts);
+       const dayStr = dateObj.toLocaleDateString([], { weekday: 'long' });
+       
+       if (dayStr !== currentDayStr) {
+          if (currentDayStr !== '') {
+             days.push({
+                name: currentDayStr,
+                date: new Date(peakTimestampStr).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+                peak: Math.round(currentDayPeak),
+                time: new Date(peakTimestampStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+                holiday: false,
+                critical: currentDayPeak > 200, // threshold example
+                points: currentDayPoints
+             });
+             parsedDaysCount++;
+          }
+          currentDayStr = dayStr;
 
-    ltlf.timestamps.forEach((ts, idx) => {
-      const dateObj = new Date(ts);
-      const dateKey = dateObj.toLocaleDateString();
-      const val = ltlf.forecast_mw[idx];
+          currentDayPoints = [];
+          currentDayPeak = 0;
+       }
+       
+       const val = data.forecast_mw[i];
+       currentDayPoints.push(val);
+       if (val > currentDayPeak) {
+          currentDayPeak = val;
+          peakTimestampStr = ts;
+       }
+    }
+  }
 
-      if (!groupedByDate[dateKey]) {
-        groupedByDate[dateKey] = { max: val, time: ts };
-        uniqueDates.push(dateKey);
-      } else if (val > groupedByDate[dateKey].max) {
-        groupedByDate[dateKey] = { max: val, time: ts };
-      }
-    });
+  // Fallback while loading or if parsing failed
+  const displayDays = days.length > 0 ? days : Array.from({ length: 7 }).map((_, i) => ({
+    name: 'Loading',
+    date: '---',
+    peak: 0,
+    time: '--:--',
+    holiday: false,
+    critical: false,
+    points: []
+  }));
 
-    // Take the first 7 days
-    uniqueDates.slice(0, 7).forEach(dateKey => {
-      const dateObj = new Date(groupedByDate[dateKey].time);
-      days.push({
-        day: dateObj.toLocaleDateString([], { weekday: 'short' }).toUpperCase(),
-        date: `${dateObj.getMonth() + 1}/${dateObj.getDate()}`,
-        peakMW: Math.round(groupedByDate[dateKey].max),
-        time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        exceedsThreshold: groupedByDate[dateKey].max > threshold
-      });
-    });
+  const maxPeakWeek = Math.max(...displayDays.map(d => d.peak));
+  const isMacroHorizon = displayDays.length > 7;
 
-    return days;
-  };
-
-  const displayData = data ? processWeeklyData(data) : [];
-  const startDay = displayData.length > 0 ? displayData[0].date : '...';
-  const endDay = displayData.length > 0 ? displayData[displayData.length - 1].date : '...';
-  const year = new Date().getFullYear();
   return (
-    <div
-      className="glass-morphism"
-    >
-
-      {/* Header */}
-      <div className="px-6 py-4 border-b" style={{ borderColor: 'var(--border-primary)', opacity: 0.5 }}>
-
-        <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-          Weekly Load Forecast
-        </h3>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-          Week of {startDay} - {endDay}, {year}
-        </p>
-      </div>
-
-      {/* Day Cards Grid */}
-      <div className="p-6">
-        <div className="grid grid-cols-7 gap-3">
-          {isLoading && displayData.length === 0 ? (
-            Array(7).fill(0).map((_, i) => (
-              <div key={i} className="h-40 animate-pulse border" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-primary)', opacity: 0.5 }} />
-            ))
-
-          ) : (
-            displayData.map((day) => (
-              <DayCard key={day.date} {...day} />
-            ))
-          )}
+    <div className="space-y-6">
+      
+      {isMacroHorizon ? (
+        <div className="glass-panel p-6 h-[400px] w-full border border-[var(--divider)]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={displayDays} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="macroFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--brand-blue-vibrant)" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="var(--brand-blue-vibrant)" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="0" stroke="var(--chart-grid)" vertical={false} strokeWidth={0.5} />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="var(--text-muted)" 
+                  fontSize={10} 
+                  fontFamily="JetBrains Mono"
+                  tickMargin={10}
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={30}
+                />
+                <YAxis 
+                  stroke="var(--text-muted)" 
+                  fontSize={10} 
+                  fontFamily="JetBrains Mono"
+                  axisLine={false}
+                  tickLine={false}
+                  domain={['auto', 'auto']}
+                  tickFormatter={v => `${v} MW`}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'var(--bg-card)', 
+                    borderColor: 'var(--border-card)', 
+                    borderRadius: '6px',
+                    fontFamily: 'JetBrains Mono',
+                    fontSize: '11px'
+                  }}
+                  cursor={{ stroke: 'var(--brand-teal)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="peak"
+                  fill="url(#macroFill)"
+                  stroke="none"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="peak"
+                  stroke="var(--brand-blue-vibrant)"
+                  strokeWidth={2}
+                  dot={displayDays.length < 40 ? { fill: 'var(--brand-blue-vibrant)', r: 2 } : false}
+                  activeDot={{ r: 5, fill: 'var(--brand-gold)', stroke: 'var(--bg-card)', strokeWidth: 2 }}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
         </div>
+      ) : (
+      <div className="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-7 gap-4">
+        {displayDays.map((day, idx) => (
+          <div 
+            key={`${day.name}-${idx}`} 
+            className={`glass-panel p-5 flex flex-col gap-5 relative group transition-all duration-300 border-t-2
+              ${day.critical ? 'border-t-[var(--status-crimson)]' : 'border-t-transparent hover:border-t-[var(--brand-blue)]'}
+            `}
+          >
+            {/* Header: Day & Date */}
+            <div className="flex justify-between items-start">
+              <div className="flex flex-col">
+                <span className="text-[11px] font-black text-[var(--text-primary)] uppercase tracking-[0.15em]">{day.name}</span>
+                <span className="text-[10px] font-bold text-[var(--text-muted)] font-mono uppercase">{day.date}</span>
+              </div>
+              {day.critical && (
+                <div className="px-1.5 py-0.5 bg-[var(--status-crimson)]/10 rounded-sm">
+                  <span className="text-[8px] font-black text-[var(--status-crimson)] uppercase tracking-tighter">PEAK</span>
+                </div>
+              )}
+            </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-2 pt-6 mt-6 border-t" style={{ borderColor: 'var(--border-primary)', opacity: 0.5 }}>
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'var(--status-error)' }} />
+            {/* Sparkline Visual */}
+            <div className="h-12 w-full opacity-60 group-hover:opacity-100 transition-opacity">
+              {isLoading ? (
+                <div className="w-full h-full animate-pulse bg-[var(--divider)]/20 rounded-sm" />
+              ) : (
+                <svg viewBox="0 0 230 60" className="w-full h-full overflow-visible">
+                  <path 
+                    d={generateSparkline(day.points)} 
+                    fill="none" 
+                    stroke={day.critical ? 'var(--status-crimson)' : 'var(--brand-indigo)'} 
+                    strokeWidth="3" 
+                    strokeLinecap="round" 
+                  />
+                </svg>
+              )}
+            </div>
 
-          <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-            Exceeds 1,600 MW threshold
-          </span>
-        </div>
+            {/* Metrics: Peak & Time */}
+            <div className="flex flex-col gap-1 mt-auto">
+              <div className="flex items-baseline gap-1.5">
+                <span className="metric-num text-2xl font-bold text-[var(--text-primary)] leading-none">
+                  {isLoading ? "..." : day.peak.toLocaleString()}
+                </span>
+                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase">MW</span>
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
+                  Peak at {isLoading ? "--:--" : day.time}
+                </span>
+              </div>
+            </div>
+
+            {day.holiday && (
+              <div className="pt-3 border-t border-[var(--divider)]/30">
+                <StatusBadge status="holiday" label="Public Holiday" />
+              </div>
+            )}
+          </div>
+        ))}
       </div>
-    </div>
-  );
-}
-
-function DayCard({ day, date, peakMW, time, exceedsThreshold }: DayForecast) {
-  return (
-    <div
-      className="glass-morphism transition-all duration-200 cursor-pointer relative"
-      style={{
-        borderColor: exceedsThreshold ? 'var(--status-error)' : 'var(--border-primary)'
-      }}
-
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
-        e.currentTarget.style.transform = 'translateY(-2px)';
-      }}
-
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-        e.currentTarget.style.transform = 'translateY(0)';
-      }}
-    >
-      {/* Alert Indicator */}
-      {exceedsThreshold && (
-        <div
-          className="absolute top-2 right-2 w-2 h-2 rounded-full"
-          style={{ backgroundColor: 'var(--status-error)' }}
-        />
       )}
 
-
-      {/* Day Header */}
-      <div
-        className="px-3 py-2 border-b"
-        style={{
-          borderColor: 'var(--border-primary)',
-          opacity: 0.8
-        }}
-      >
-
-
-        <p className="text-xs font-bold text-center tracking-widest uppercase" style={{
-          color: 'var(--text-tertiary)',
-          fontFamily: 'var(--font-geist-mono)'
-        }}>
-          {day}
-        </p>
-
-        <p className="text-sm font-medium text-center mt-0.5" style={{ color: 'var(--text-primary)' }}>
-          {date}
-        </p>
-      </div>
-
-      {/* Card Body */}
-      <div className="flex flex-col items-center justify-center p-4" style={{ minHeight: '140px' }}>
-        <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{
-          color: 'var(--text-tertiary)',
-          fontFamily: 'var(--font-geist-mono)'
-        }}>
-          PEAK
-        </p>
-
-        <p className="text-2xl font-black tracking-tighter mb-1" style={{
-          color: exceedsThreshold ? 'var(--status-error)' : 'var(--text-primary)'
-        }}>
-          {peakMW.toLocaleString()}
-        </p>
-
-        <p className="text-[10px] font-bold uppercase tracking-widest px-2 py-1" style={{
-          color: 'var(--text-tertiary)',
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid var(--border-primary)',
-          fontFamily: 'var(--font-geist-mono)'
-        }}>
-          {time}
-        </p>
-
-      </div>
+      {/* Professional Alert Banner */}
+      {!isLoading && maxPeakWeek > 145 && (
+        <div className="p-4 bg-[var(--status-crimson)]/5 border border-[var(--status-crimson)]/20 rounded-sm flex items-start gap-4 glass-panel">
+          <div className="w-10 h-10 flex-shrink-0 rounded-sm bg-[var(--status-crimson)]/10 flex items-center justify-center">
+            <span className="text-xl font-black text-[var(--status-crimson)]">!</span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-black text-[var(--status-crimson)] uppercase tracking-[0.2em]">Operational Risk Alert</span>
+            <p className="text-[13px] font-medium text-[var(--text-primary)] leading-snug">
+              Load projection exceeds typical substation maximums (145 MW). 
+              Automated recommendation: Review transformer cooling systems and busbar alignments.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

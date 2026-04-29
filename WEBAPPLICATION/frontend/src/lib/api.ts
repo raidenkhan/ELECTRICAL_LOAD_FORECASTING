@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getToken, removeToken } from './auth';
+import { toast } from 'sonner';
 
 // Use localhost:8000 as confirmed by user state
 const API_URL = 'http://localhost:8000/api/v1';
@@ -31,6 +32,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
             removeToken();
+            toast.error("Unauthorized access. Please login again.");
             // Redirect to login if not already there
             if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
                 window.location.href = '/login';

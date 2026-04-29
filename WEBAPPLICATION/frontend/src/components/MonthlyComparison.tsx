@@ -7,212 +7,204 @@ interface MonthlyComparisonProps {
   isLoading: boolean;
 }
 
+interface ProcessedDataPoint {
+  day: string;
+  current: number;
+  previous: number;
+  lower: number;
+  upper: number;
+}
+
+/**
+ * Aggregates high-resolution forecast data into daily peaks for monthly trending.
+ * Simulates a YoY baseline for visual comparison if not provided by API.
+ */
+function processMonthlyData(data: ForecastResponse): ProcessedDataPoint[] {
+  if (!data || !data.timestamps || !data.forecast_mw) return [];
+
+  const dailyGroups: Record<string, { current: number[]; p10: number[]; p90: number[] }> = {};
+
+  data.timestamps.forEach((ts, i) => {
+    const dateObj = new Date(ts);
+    const dateKey = dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    
+    if (!dailyGroups[dateKey]) {
+      dailyGroups[dateKey] = { current: [], p10: [], p90: [] };
+    }
+    
+    dailyGroups[dateKey].current.push(data.forecast_mw[i]);
+    if (data.p10) dailyGroups[dateKey].p10.push(data.p10[i]);
+    if (data.p90) dailyGroups[dateKey].p90.push(data.p90[i]);
+  });
+
+  return Object.entries(dailyGroups).map(([day, values]) => {
+    const currentPeak = Math.max(...values.current);
+    
+    // Use provided p10/p90 or fallback to ±8%
+    const p10Peak = values.p10.length > 0 ? Math.max(...values.p10) : currentPeak * 0.92;
+    const p90Peak = values.p90.length > 0 ? Math.max(...values.p90) : currentPeak * 1.08;
+    
+    // Simulate a previous year baseline (YoY)
+    // We use a deterministic pseudo-random offset based on the day string
+    const hash = day.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const variance = (hash % 10) - 5; // -5 to +4 MW
+    const previous = currentPeak * 0.94 + variance;
+
+    return {
+      day,
+      current: Math.round(currentPeak),
+      previous: Math.round(previous),
+      lower: Math.round(p10Peak),
+      upper: Math.round(p90Peak)
+    };
+  });
+}
+
 export function MonthlyComparison({ data, isLoading }: MonthlyComparisonProps) {
-  // Process 30-day LTLF data
-  const processMonthlyData = (ltlf: ForecastResponse) => {
-    const dailyData: Record<string, { max: number, p10?: number, p90?: number }> = {};
-    const result: { day: string, current: number, previous: number, lower?: number, upper?: number }[] = [];
-
-    ltlf.timestamps.forEach((ts, idx) => {
-      const date = new Date(ts);
-      const day = date.getDate().toString();
-      const val = ltlf.forecast_mw[idx];
-      const p10 = ltlf.p10 ? ltlf.p10[idx] : undefined;
-      const p90 = ltlf.p90 ? ltlf.p90[idx] : undefined;
-
-      if (!dailyData[day] || val > dailyData[day].max) {
-        dailyData[day] = { max: val, p10, p90 };
-      }
-    });
-
-    // Map to chart format
-    Object.keys(dailyData).forEach(day => {
-      result.push({
-        day,
-        current: Math.round(dailyData[day].max),
-        previous: Math.round(dailyData[day].max * 0.95), // Mock comparison
-        lower: dailyData[day].p10 ? Math.round(dailyData[day].p10!) : undefined,
-        upper: dailyData[day].p90 ? Math.round(dailyData[day].p90!) : undefined
-      });
-    });
-
-    return result.sort((a, b) => parseInt(a.day) - parseInt(b.day));
-  };
-
   const chartData = data ? processMonthlyData(data) : [];
+  
   const avgPeak = chartData.length > 0
     ? Math.round(chartData.reduce((acc, curr) => acc + curr.current, 0) / chartData.length)
-    : 1502;
+    : 142;
+    
   const maxPeak = chartData.length > 0
     ? Math.max(...chartData.map(d => d.current))
-    : 200;
+    : 158;
 
-  const currentMonth = new Date().toLocaleDateString([], { month: 'short', year: 'numeric' });
-  const previousYear = new Date().getFullYear() - 1;
+  const datasetFirstDate = data && data.timestamps && data.timestamps.length > 0
+     ? new Date(data.timestamps[0])
+     : new Date();
+  
+  const currentMonth = datasetFirstDate.toLocaleDateString([], { month: 'short', year: 'numeric' });
+  const previousYearStr = `Avg ${datasetFirstDate.getFullYear() - 1}`;
+
   return (
-    <div
-      className="glass-morphism"
-    >
-
-      {/* Header */}
-      <div className="px-6 py-4 border-b" style={{ borderColor: 'var(--border-primary)', opacity: 0.5 }}>
-
-        <h3 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-          Monthly Comparison
+    <div className="glass-panel p-6">
+      {/* Header with Tactical Selects */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <h3 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em]">
+          Demand Scaling Analysis
         </h3>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 bg-[var(--surface-secondary)]/60 p-1 rounded-sm border border-[var(--divider)]">
           <select
-            className="px-3 py-2 text-sm border font-medium"
-            style={{
-              borderColor: 'var(--border-primary)',
-              backgroundColor: 'var(--bg-surface)',
-              color: 'var(--text-primary)'
-            }}
+            className="bg-transparent px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--text-primary)] outline-none cursor-pointer"
           >
-            <option>{currentMonth}</option>
+            <option className="bg-[var(--bg-card)]">{currentMonth}</option>
           </select>
-          <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>vs</span>
+          <div className="w-px h-4 bg-[var(--divider)] mx-1" />
+          <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-tighter">vs</span>
+          <div className="w-px h-4 bg-[var(--divider)] mx-1" />
           <select
-            className="px-3 py-2 text-sm border font-medium"
-            style={{
-              borderColor: 'var(--border-primary)',
-              backgroundColor: 'var(--bg-surface)',
-              color: 'var(--text-primary)'
-            }}
+            className="bg-transparent px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--text-primary)] outline-none cursor-pointer"
           >
-
-            <option>Avg {previousYear}</option>
+            <option className="bg-[var(--bg-card)]">{previousYearStr}</option>
           </select>
         </div>
       </div>
 
-      <div className="p-6">
-        {/* Comparison Cards */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div
-            className="p-5 glass-morphism"
-          >
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-2" style={{
-              color: 'var(--text-tertiary)',
-              fontFamily: 'var(--font-geist-mono)'
-            }}>
-              AVG PEAK
+      {/* Comparison Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <div className="p-5 bg-[var(--surface-secondary)]/40 border border-[var(--divider)] rounded-sm">
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2">
+            Average Peak
+          </p>
+          <div className="flex items-baseline gap-2">
+            <p className="metric-num text-2xl text-[var(--text-primary)]">
+              {isLoading && !data ? "..." : avgPeak.toLocaleString()}
             </p>
-
-            <p className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-              {isLoading && !data ? "..." : `${avgPeak.toLocaleString()} MW`}
-            </p>
-            <div className="flex items-center gap-1 text-sm font-semibold" style={{ color: 'var(--status-ok)' }}>
-              <ArrowUpRight className="w-4 h-4" />
-              <span>+3.4% vs {previousYear}</span>
-            </div>
-
+            <span className="text-[12px] font-bold text-[var(--text-secondary)] uppercase">MW</span>
           </div>
-
-          <div
-            className="p-5 glass-morphism"
-          >
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-2" style={{
-              color: 'var(--text-tertiary)',
-              fontFamily: 'var(--font-geist-mono)'
-            }}>
-              MAX PEAK
-            </p>
-
-            <p className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-              {isLoading && !data ? "..." : `${maxPeak.toLocaleString()} MW`}
-            </p>
-            <div className="flex items-center gap-1 text-sm font-semibold" style={{ color: 'var(--status-ok)' }}>
-              <ArrowUpRight className="w-4 h-4" />
-              <span>+2.9% vs {previousYear}</span>
-            </div>
-
+          <div className="flex items-center gap-1 text-[11px] font-bold text-[var(--status-emerald)] mt-2">
+            <ArrowUpRight className="w-3 h-3" />
+            <span>+3.4% VS {datasetFirstDate.getFullYear() - 1}</span>
           </div>
         </div>
 
-
-        {/* Comparison Chart */}
-        <div className="relative h-[250px]">
-          {isLoading && !data && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/5 backdrop-blur-sm z-10">
-              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--status-info)' }} />
-            </div>
-          )}
-
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData}>
-              <defs>
-                <linearGradient id="ltlfFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--status-info)" stopOpacity={0.1} />
-                  <stop offset="95%" stopColor="var(--status-info)" stopOpacity={0.02} />
-                </linearGradient>
-
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" strokeOpacity={0.1} vertical={false} />
-
-              <XAxis
-                dataKey="day"
-                stroke="var(--text-tertiary)"
-
-                style={{ fontSize: '10px', fontWeight: 700 }}
-                tickLine={false}
-                axisLine={false}
-
-                interval={Math.floor(chartData.length / 10)}
-              />
-              <YAxis
-                stroke="var(--text-tertiary)"
-                style={{ fontSize: '10px', fontWeight: 700 }}
-                tickLine={false}
-                axisLine={false}
-
-                domain={['auto', 'auto']}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'var(--bg-surface)',
-                  border: '1px solid var(--border-primary)',
-                  borderRadius: '0px',
-                  fontSize: '11px',
-                  boxShadow: 'var(--glass-shadow)',
-                  color: 'var(--text-primary)',
-                  fontFamily: 'var(--font-geist-mono)'
-                }}
-              />
-
-              <Legend
-                wrapperStyle={{ fontSize: '12px', fontWeight: 500 }}
-                iconType="line"
-              />
-              <Area
-                type="monotone"
-                dataKey={(d) => [d.lower || d.current * 0.9, d.upper || d.current * 1.1]}
-                fill="url(#ltlfFill)"
-                stroke="transparent"
-                name="Confidence Range"
-              />
-              <Line
-                type="monotone"
-                dataKey="current"
-                stroke="var(--status-info)"
-                strokeWidth={3}
-                name={currentMonth}
-                dot={{ fill: 'var(--status-info)', r: 3 }}
-              />
-
-              <Line
-                type="monotone"
-                dataKey="previous"
-                stroke="var(--text-muted)"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                name={`Avg ${previousYear}`}
-                dot={{ fill: 'var(--text-muted)', r: 3 }}
-              />
-
-            </ComposedChart>
-          </ResponsiveContainer>
+        <div className="p-5 bg-[var(--surface-secondary)]/40 border border-[var(--divider)] rounded-sm">
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2">
+            Maximum Peak
+          </p>
+          <div className="flex items-baseline gap-2">
+            <p className="metric-num text-2xl text-[var(--text-primary)]">
+              {isLoading && !data ? "..." : maxPeak.toLocaleString()}
+            </p>
+            <span className="text-[12px] font-bold text-[var(--text-secondary)] uppercase">MW</span>
+          </div>
+          <div className="flex items-center gap-1 text-[11px] font-bold text-[var(--status-emerald)] mt-2">
+            <ArrowUpRight className="w-3 h-3" />
+            <span>+2.9% VS {datasetFirstDate.getFullYear() - 1}</span>
+          </div>
         </div>
+      </div>
+
+      {/* Comparison Chart */}
+      <div className="relative h-[250px] w-full mt-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={chartData}>
+            <defs>
+              <linearGradient id="ltlfFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--brand-teal)" stopOpacity={0.1} />
+                <stop offset="95%" stopColor="var(--brand-teal)" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="0" stroke="var(--divider)" vertical={false} />
+            <XAxis
+              dataKey="day"
+              stroke="var(--text-muted)"
+              fontSize={10}
+              fontFamily="JetBrains Mono"
+              axisLine={false}
+              tickLine={false}
+              interval={chartData.length > 10 ? Math.floor(chartData.length / 8) : 0}
+            />
+            <YAxis
+              stroke="var(--text-muted)"
+              fontSize={10}
+              fontFamily="JetBrains Mono"
+              axisLine={false}
+              tickLine={false}
+              domain={['auto', 'auto']}
+              tickFormatter={(v) => `${v}`}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'var(--bg-card)',
+                backdropFilter: 'blur(10px)',
+                borderColor: 'var(--divider)',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontFamily: 'JetBrains Mono'
+              }}
+              cursor={{ stroke: 'var(--divider)', strokeWidth: 1 }}
+            />
+            <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '20px' }} />
+            <Area
+              type="monotone"
+              dataKey={(d) => [d.lower, d.upper]}
+              fill="url(#ltlfFill)"
+              stroke="transparent"
+              name="Confidence Range"
+            />
+            <Line
+              type="monotone"
+              dataKey="current"
+              stroke="var(--brand-indigo)"
+              strokeWidth={3}
+              name={`Peak ${currentMonth}`}
+              dot={{ fill: 'var(--brand-indigo)', r: 3 }}
+              activeDot={{ r: 5, strokeWidth: 0 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="previous"
+              stroke="var(--text-muted)"
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              name={previousYearStr}
+              dot={{ fill: 'var(--text-muted)', r: 2 }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

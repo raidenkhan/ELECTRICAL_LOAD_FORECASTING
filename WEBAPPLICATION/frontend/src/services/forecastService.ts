@@ -19,6 +19,7 @@ export interface ForecastResponse {
     model_type: string;
     timestamps: string[];
     forecast_mw: number[];
+    simday_forecast_mw?: number[];
     p10?: number[];
     p90?: number[];
     regime_distribution?: RegimeBin[];
@@ -70,8 +71,8 @@ export const forecastService = {
         return response.data;
     },
 
-    async getShapValues(): Promise<{ features: string[], values: number[], base_value: number }> {
-        const response = await api.get('/explain/shap');
+    async getPeakDecomposition(): Promise<{ peak_mw: number, peak_timestamp: string, components: { name: string, value: number, color: string }[] }> {
+        const response = await api.get('/explain/peak-decomposition');
         return response.data;
     },
 

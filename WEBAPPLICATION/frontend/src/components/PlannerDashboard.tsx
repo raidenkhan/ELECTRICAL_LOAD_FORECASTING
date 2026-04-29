@@ -1,79 +1,99 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { WeeklyForecast } from './WeeklyForecast';
 import { MonthlyComparison } from './MonthlyComparison';
 import { ScenarioSimulator } from './ScenarioSimulator';
-import { useState, useEffect } from 'react';
 import { forecastService, ForecastResponse } from '@/services/forecastService';
-import { AlertTriangle, Clock } from 'lucide-react';
 
 export function PlannerDashboard() {
-  const [ltlf, setLtlf] = useState<ForecastResponse | null>(null);
+  const [ltlfData, setLtlfData] = useState<ForecastResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [horizonDays, setHorizonDays] = useState(30);
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchLTLF() {
       try {
         setIsLoading(true);
-        // Fetch 30-day forecast (720 hours)
-        const data = await forecastService.getLTLF(720);
-        setLtlf(data);
-        setError(null);
-      } catch (err: any) {
-        console.error('Failed to fetch LTLF:', err);
-        setError(err.message || 'Failed to load long-term forecast data');
+        // Fetch requested horizon (days * 24 h)
+        const data = await forecastService.getLTLF(horizonDays * 24);
+        setLtlfData(data);
+      } catch (error) {
+        console.error('Failed to fetch LTLF data:', error);
       } finally {
         setIsLoading(false);
       }
     }
-    fetchData();
-  }, []);
+    fetchLTLF();
+  }, [horizonDays]);
 
   return (
-    <div className="space-y-6">
-      {error && (
-        <div
-          className="p-6 border flex items-center gap-3 glass-morphism"
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--status-error), transparent 95%)',
-            borderColor: 'var(--status-error)',
-            color: 'var(--status-error)'
-          }}
-        >
-          <AlertTriangle className="w-5 h-5" />
-          <span className="font-bold tracking-tight uppercase" style={{ fontFamily: 'var(--font-geist-mono)' }}>{error}</span>
-        </div>
-      )}
+    <div className="flex flex-col gap-10 h-full font-sans">
 
-
-      {isLoading && !ltlf && (
-        <div
-          className="p-12 flex flex-col items-center justify-center border glass-morphism"
-          style={{
-            backgroundColor: 'var(--bg-secondary)',
-            borderColor: 'var(--border-primary)'
-          }}
-        >
-          <Clock className="w-10 h-10 animate-spin mb-6" style={{ color: 'var(--status-info)' }} />
-          <p className="text-sm font-bold tracking-widest uppercase mb-1" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-geist-mono)' }}>
-            Generating Long-Term Forecast...
-          </p>
-          <p className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-geist-mono)' }}>
-            This may take a moment for 30-day horizons
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="headline text-[var(--text-primary)]">System Planning & Analysis</h1>
+          <p className="body-text text-[var(--text-secondary)]">
+            Manage forward-looking load projections, seasonal comparisons, and scenario-based capacity planning.
           </p>
         </div>
-      )}
+        
+        {/* Horizon Selector */}
+        <div className="flex items-center gap-1 bg-[var(--surface-secondary)]/60 p-1 rounded-sm border border-[var(--divider)]">
+          {[
+            { label: '1 Week', value: 7 },
+            { label: '1 Month', value: 30 },
+            { label: '1 Quarter', value: 90 },
+            { label: '1 Year', value: 365 }
+          ].map(opt => (
+             <button
+                key={opt.value}
+                onClick={() => setHorizonDays(opt.value)}
+                className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-sm transition-colors ${
+                  horizonDays === opt.value 
+                  ? 'bg-[var(--brand-blue)] text-white' 
+                  : 'text-[var(--text-primary)] hover:bg-[var(--divider)]/50'
+                }`}
+             >
+                {opt.label}
+             </button>
+          ))}
+        </div>
+      </div>
 
+      {/* Horizon Outlook */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="title text-[var(--text-primary)] uppercase tracking-widest font-bold">Horizon Outlook</h2>
+          <span className="caption text-[var(--text-muted)]">Selected Horizon | Recursive Model</span>
+        </div>
+        <WeeklyForecast data={ltlfData} isLoading={isLoading} />
+      </section>
 
-      {/* Weekly Forecast Calendar */}
-      <WeeklyForecast data={ltlf} isLoading={isLoading} />
+      {/* Comparison & Simulation Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Comparison */}
-        <MonthlyComparison data={ltlf} isLoading={isLoading} />
+        {/* Monthly Trend Comparison */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="title text-[var(--text-primary)] uppercase tracking-widest font-bold">Trend Scaling</h2>
+            <span className="caption text-[var(--text-muted)]">YoY Comparison</span>
+          </div>
+          <MonthlyComparison data={ltlfData} isLoading={isLoading} />
+        </section>
 
-        {/* Scenario Simulator */}
-        <ScenarioSimulator />
+        {/* What-If Scenario Builder */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="title text-[var(--text-primary)] uppercase tracking-widest font-bold">GRIDCo What-If Builder</h2>
+            <span className="caption text-[var(--text-muted)]">Policy & Weather Simulations</span>
+          </div>
+          <ScenarioSimulator 
+            defaultPeak={ltlfData?.forecast_mw ? Math.max(...ltlfData.forecast_mw) : 155} 
+          />
+        </section>
+
       </div>
     </div>
   );

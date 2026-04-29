@@ -9,7 +9,7 @@ interface ExplainabilityModalProps {
 }
 
 export function ExplainabilityModal({ isOpen, onClose }: ExplainabilityModalProps) {
-  const [shapData, setShapData] = useState<{ features: string[], values: number[], base_value: number } | null>(null);
+  const [decomData, setDecomData] = useState<{ peak_mw: number, peak_timestamp: string, components: { name: string, value: number, color: string }[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -17,10 +17,10 @@ export function ExplainabilityModal({ isOpen, onClose }: ExplainabilityModalProp
       const fetchData = async () => {
         try {
           setIsLoading(true);
-          const data = await forecastService.getShapValues();
-          setShapData(data);
+          const data = await forecastService.getPeakDecomposition();
+          setDecomData(data);
         } catch (err) {
-          console.error('Failed to fetch SHAP:', err);
+          console.error('Failed to fetch decomposition:', err);
         } finally {
           setIsLoading(false);
         }
@@ -31,14 +31,11 @@ export function ExplainabilityModal({ isOpen, onClose }: ExplainabilityModalProp
 
   if (!isOpen) return null;
 
-  const totalAdjustment = shapData ? shapData.values.reduce((a, b) => a + b, 0) : 0;
-  const finalForecast = shapData ? Math.round(shapData.base_value + totalAdjustment) : 1580;
-
-  // Prepare data for BarChart
-  const chartData = shapData ? shapData.features.map((f, i) => ({
-    name: f.replace(/_mw|mw/gi, '').replace(/_/g, ' ').toUpperCase(),
-    value: parseFloat(shapData.values[i].toFixed(1)),
-  })).sort((a, b) => Math.abs(b.value) - Math.abs(a.value)) : [];
+  // Prepare data for stacked comparison
+  // Recharts Bar chart can handle multiple <Bar /> components for stacking
+  const chartData = decomData ? [
+    decomData.components.reduce((acc, curr) => ({ ...acc, [curr.name]: curr.value }), { name: 'Peak Hour Breakdown' })
+  ] : [];
 
   return (
     <div
@@ -64,14 +61,14 @@ export function ExplainabilityModal({ isOpen, onClose }: ExplainabilityModalProp
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                  Forecast Insights
+                  Structural Insights
                 </h2>
-                <div className="px-2 py-0.5 rounded bg-blue-50 text-[10px] font-bold text-blue-600 uppercase">
-                  SHAP Explainability
+                <div className="px-2 py-0.5 rounded bg-emerald-50 text-[10px] font-bold text-emerald-600 uppercase">
+                  Decomposition Engine
                 </div>
               </div>
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {isLoading ? 'Running attribution model...' : `Target: ${finalForecast} MW (+${totalAdjustment.toFixed(1)} MW from base)`}
+                {isLoading ? 'Decomposing signal...' : `Peak Demand Analysis: ${decomData?.peak_mw} MW at ${decomData ? new Date(decomData.peak_timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}`}
               </p>
             </div>
             <button
@@ -87,20 +84,12 @@ export function ExplainabilityModal({ isOpen, onClose }: ExplainabilityModalProp
         {/* Content */}
         <div className="p-8 space-y-8 overflow-y-auto">
 
-          {/* Top Drivers Chart */}
+          {/* Component Breakdown Chart */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
-                <BarChart3 className="w-4 h-4" /> Feature Impact (MW)
+                <BarChart3 className="w-4 h-4" /> Component Impact (MW)
               </h3>
-              <div className="flex items-center gap-4 text-[10px] font-medium">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-red-500" /> Increasing Demand
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" /> Reducing Demand
-                </div>
-              </div>
             </div>
 
             <div className={`h-[300px] w-full rounded-xl border p-4 bg-gray-50/30 relative ${isLoading ? 'opacity-50' : ''}`}
@@ -108,42 +97,47 @@ export function ExplainabilityModal({ isOpen, onClose }: ExplainabilityModalProp
               {isLoading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-2" />
-                  <span className="text-xs font-medium text-gray-500">Calculating...</span>
+                  <span className="text-xs font-medium text-gray-500">Decomposing...</span>
                 </div>
               )}
 
-              {!isLoading && chartData.length > 0 ? (
+              {!isLoading && decomData ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
-                    <XAxis type="number" hide />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      stroke="#64748b"
-                      fontSize={10}
-                      width={80}
-                      axisLine={false}
-                      tickLine={false}
-                    />
+                  <BarChart data={chartData} layout="vertical" margin={{ top: 20, right: 30, left: 40, bottom: 20 }} barSize={60}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="#e2e8f0" />
+                    <XAxis type="number" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} label={{ value: 'Demand (MW)', position: 'insideBottom', offset: -10, fontSize: 10, fill: '#64748b' }} />
+                    <YAxis dataKey="name" type="category" hide />
                     <Tooltip
                       cursor={{ fill: 'transparent' }}
-                      contentStyle={{ borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '12px', fontWeight: '500' }}
-                      formatter={(value: number) => [`${value > 0 ? '+' : ''}${value} MW`, 'Impact']}
+                      contentStyle={{ borderRadius: '12px', border: '1px solid var(--border-default)', fontSize: '13px', fontWeight: 'bold' }}
+                      formatter={(value: number, name: string) => [`${value > 0 ? '+' : ''}${value} MW`, name]}
                     />
-                    <ReferenceLine x={0} stroke="#94a3b8" strokeWidth={1} />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.value > 0 ? '#ef4444' : '#10b981'} />
-                      ))}
-                    </Bar>
+                    {decomData.components.map((comp, i) => (
+                      <Bar 
+                        key={comp.name} 
+                        dataKey={comp.name} 
+                        stackId="peak" 
+                        fill={comp.color} 
+                        radius={i === 0 ? [4, 0, 0, 4] : i === decomData.components.length - 1 ? [0, 4, 4, 0] : [0, 0, 0, 0]} 
+                      />
+                    ))}
                   </BarChart>
                 </ResponsiveContainer>
               ) : !isLoading && (
                 <div className="h-full flex items-center justify-center text-gray-400 text-sm italic">
-                  No driver data available for this horizon.
+                  No structural data available for this horizon.
                 </div>
               )}
+            </div>
+            
+            {/* Legend for components */}
+            <div className="mt-6 flex flex-wrap gap-4 justify-center">
+              {decomData?.components.map((comp) => (
+                <div key={comp.name} className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: comp.color }} />
+                  <span className="text-[11px] font-bold uppercase tracking-tight text-gray-600">{comp.name}</span>
+                </div>
+              ))}
             </div>
           </div>
 

@@ -9,6 +9,7 @@ import {
   Server, Network, BarChart, Settings, CheckCircle2, FlaskConical,
   GitMerge, Layers, Code2, Terminal, Webhook, Key, Clock, TrendingUp
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface LoginPageProps {
   onSignIn: (email: string, password: string) => Promise<void>;
@@ -66,15 +67,20 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
       if (activeTab === 'signup') {
         if (password !== confirmPassword) {
           setError('Passwords do not match');
+          toast.error('Passwords do not match');
           setLoading(false);
           return;
         }
         await onSignUp(email, password, fullName, selectedRole, selectedRegion, organization);
+        toast.success('Account created successfully');
       } else {
         await onSignIn(email, password);
+        toast.success('Logged in successfully');
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Authentication failed. Please check your credentials.');
+      const msg = err.response?.data?.detail || 'Authentication failed. Please check your credentials.';
+      setError(msg);
+      toast.error(msg === 'Unauthorized' ? 'Unauthorized' : msg);
     } finally {
       setLoading(false);
     }
@@ -143,13 +149,13 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
 
           {/* AUTH CARD COLUMN */}
           <motion.div
-            className="flex-1 flex items-center justify-center lg:justify-end"
+            className="flex-shrink-0 flex-grow-0 basis-full lg:basis-[440px] flex items-center justify-center lg:justify-end"
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <div className="w-full max-w-[440px] bg-card/80 backdrop-blur-2xl border border-border p-8 lg:p-12 shadow-2xl relative">
+            <div className="w-full max-w-[440px] bg-card/80 backdrop-blur-2xl border border-border p-8 lg:p-12 shadow-2xl relative" style={{ width: '100%' }}>
               <div className="absolute -top-1 -left-1 w-6 h-6 border-t-2 border-l-2 border-primary" />
               <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-2 border-r-2 border-primary" />
 
