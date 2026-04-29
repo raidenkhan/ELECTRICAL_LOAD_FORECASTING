@@ -8,7 +8,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=False
+        case_sensitive=False,
+        protected_namespaces=(),
+        extra="ignore"
     )
     
     # API Settings
@@ -25,9 +27,12 @@ class Settings(BaseSettings):
     
     # Model Paths
     MODEL_DIR: str = "./models"
-    STLF_AUTOFORMER_PATH: str = "./models/autoformer_stlf.pt"
-    STLF_LIGHTGBM_PATH: str = "./models/lightgbm_stlf.pkl"
     LTLF_RECURSIVE_PATH: str = "./models/ltlf_recursive.pkl"
+    DECOMP_MODEL_PATH: str = "./models/decomp_engine.joblib"
+    
+    # Decomposition Model Constants
+    TEMP_KNOT: float = 24.0
+    MIN_LOAD_MW: float = 5.0
     
     # Feature Engineering
     LAG_FEATURES: str = "1,4,96,672"  # 15m, 1h, 24h, 7d

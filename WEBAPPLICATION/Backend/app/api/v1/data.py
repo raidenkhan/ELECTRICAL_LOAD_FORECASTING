@@ -92,7 +92,9 @@ async def upload_data(
             file_size_bytes=file_size,
             row_count=len(df),
             status=upload.status,
-            message=f"Validation {'passed' if validation_results['passed'] else 'failed'}. Report ID: {report.id}"
+            message=f"Validation {'passed' if validation_results['passed'] else 'failed'}. Report ID: {report.id}",
+            health_grade=validation_results.get("health_grade", "F"),
+            impact_summary=validation_results.get("impact_summary")
         )
         
     except HTTPException:
@@ -228,6 +230,7 @@ async def reset_system_data(
     """
     import subprocess
     import os
+    from app.services.forecast_service import ForecastService
     
     try:
         # Path to the restoration script
@@ -239,6 +242,10 @@ async def reset_system_data(
         if result.returncode != 0:
             logger.error(f"Restoration script failed: {result.stderr}")
             raise HTTPException(status_code=500, detail=f"Reset failed: {result.stderr}")
+        
+        # Clear metrics cache
+        fs = ForecastService()
+        fs._cache["metrics"]["data"] = None
             
         return {"status": "success", "message": "System reverted to Community Load baseline"}
         

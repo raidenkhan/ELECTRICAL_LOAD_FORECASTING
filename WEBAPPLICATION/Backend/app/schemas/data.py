@@ -11,6 +11,8 @@ class DataUploadResponse(BaseModel):
     row_count: int
     status: str
     message: str
+    health_grade: Optional[str] = "F"
+    impact_summary: Optional[str] = None
     
 
 class ValidationSummary(BaseModel):

@@ -1,7 +1,7 @@
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class RegimeBin(BaseModel):
     hour: str
@@ -10,6 +10,8 @@ class RegimeBin(BaseModel):
     regime2: float  # Peak (%)
 
 class ForecastRequest(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+    
     horizon_hours: int = Field(24, ge=1, le=720, description="Forecast horizon in hours")
     model_type: str = Field("stlf", pattern="^(stlf|ltlf)$", description="Model type: stlf (Short-Term) or ltlf (Long-Term)")
 
@@ -32,6 +34,8 @@ class MetricResponse(BaseModel):
     sample_count: int
 
 class ForecastResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+    
     forecast_id: str
     timestamp: datetime
     horizon_hours: int
@@ -43,5 +47,8 @@ class ForecastResponse(BaseModel):
     p10: Optional[List[float]] = None
     p90: Optional[List[float]] = None
     regime_distribution: Optional[List[RegimeBin]] = None
+    
+    # Optional Comparison Model (GRIDCo Similar Day)
+    simday_forecast_mw: Optional[List[float]] = None
     
     metadata: Optional[Dict[str, Any]] = None

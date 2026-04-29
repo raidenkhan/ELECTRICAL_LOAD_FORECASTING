@@ -36,8 +36,10 @@ async def generate_stlf(
             model_type="stlf",
             timestamps=result["timestamps"],
             forecast_mw=result["forecast_mw"],
+            simday_forecast_mw=result.get("simday_forecast_mw"),
             p10=result.get("p10"),
             p90=result.get("p90"),
+            regime_distribution=result.get("regime_distribution"),
             metadata=result.get("metadata")
         )
     except ValueError as ve:

@@ -26,9 +26,8 @@ class ModelLoader:
     def __init__(self):
         if not self.initialized:
             self.model_paths = {
-                "autoformer_stlf": settings.STLF_AUTOFORMER_PATH,
-                "lightgbm_stlf": settings.STLF_LIGHTGBM_PATH,
-                "ltlf_recursive": settings.LTLF_RECURSIVE_PATH
+                "ltlf_recursive": settings.LTLF_RECURSIVE_PATH,
+                "decom_engine": settings.DECOMP_MODEL_PATH
             }
             self.initialized = True
             
@@ -53,7 +52,15 @@ class ModelLoader:
         try:
             logger.info(f"Loading model '{name}' from {path}...")
             
-            if path.endswith(".pt"):
+            if name == "decom_engine":
+                from app.ml.decom_engine import DecomEngine
+                model = DecomEngine()
+                model.load(path)
+            elif name == "ltlf_recursive":
+                from app.ml.ltlf_recursive import LTLFRecursiveEngine
+                model = LTLFRecursiveEngine()
+                model.load()
+            elif path.endswith(".pt"):
                 # Load PyTorch model
                 # map_location='cpu' ensuring we can run anywhere
                 model = torch.load(path, map_location=torch.device('cpu'))

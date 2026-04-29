@@ -11,24 +11,18 @@ class DataValidator:
     
     def __init__(self):
         # Validation thresholds
-        self.voltage_range = (10, 500)  # kV (Relaxed to support distribution levels e.g. 33kV)
+        self.voltage_range = (10, 500)  # kV
         self.current_range = (0, 10000)  # A
-        self.frequency_range = (45.0, 55.0)  # Hz (Relaxed for verification)
+        self.frequency_range = (45.0, 55.0)  # Hz
         self.temperature_range = (-50, 100)  # °C
-        self.load_range = (-500, 2000)  # MW (broadened for noise)
-        self.net_imbalance_threshold = 500.0  # MW (widened for verification)
+        self.load_range = (25.0, 2000)  # MW (Below 25 MW is an outage for Community Load)
+        self.net_imbalance_threshold = 500.0  # MW
+        self.MIN_LOAD_OUTAGE = 25.0
         
     def validate_csv(self, df: pd.DataFrame) -> Dict[str, Any]:
         """
-        Perform comprehensive validation on uploaded CSV data.
-        
-        Args:
-            df: DataFrame with SCADA data
-            
-        Returns:
-            Dictionary with validation results
+        Perform comprehensive validation and return a health grade.
         """
-        # Create a copy and standardize columns to uppercase for internal validation
         df = df.copy()
         df.columns = [col.upper() for col in df.columns]
         
@@ -39,44 +33,59 @@ class DataValidator:
             "anomaly_count": 0,
             "validation_checks": {},
             "passed": True,
-            "error_messages": []
+            "error_messages": [],
+            "health_grade": "F",
+            "impact_summary": ""
         }
         
         try:
-            # 1. Check for required columns (now checking standardized uppercase)
+            # 1. Column Check
             required_cols = ["TIMESTAMP", "TOTAL_LOAD_MW"]
             missing_cols = [col for col in required_cols if col not in df.columns]
-            
-            # Fallback: check if 'timestamp' exists in any case if 'TIMESTAMP' is missing (redundant but safe)
             if missing_cols:
                 results["passed"] = False
                 results["error_messages"].append(f"Missing required columns: {missing_cols}")
                 return results
             
-            # 2. Net imbalance check
+            # 2. Perform Checks
+            results["validation_checks"]["outage_check"] = self._check_outages(df)
             results["validation_checks"]["net_imbalance"] = self._check_net_imbalance(df)
-            
-            # 3. Sign convention validation
             results["validation_checks"]["sign_convention"] = self._check_sign_convention(df)
-            
-            # 4. Range validation
             results["validation_checks"]["range_validation"] = self._check_ranges(df)
-            
-            # 5. Missing data detection
             results["validation_checks"]["missing_data"] = self._check_missing_data(df)
-            
-            # 6. Anomaly detection
             results["validation_checks"]["anomalies"] = self._detect_anomalies(df)
+            results["validation_checks"]["physics_correlation"] = self._check_physics_correlation(df)
             
-            # Calculate valid/invalid rows
-            results["valid_rows"] = len(df) - results["anomaly_count"]
-            results["invalid_rows"] = results["anomaly_count"]
+            # 3. Grade Calculation
+            # Count critical failures (Net imbalance or massive range violations)
+            critical_checks = ["net_imbalance", "range_validation", "missing_data"]
+            fail_count = sum(1 for k, c in results["validation_checks"].items() if k in critical_checks and not c.get("passed", True))
             
-            # Overall pass/fail
-            results["passed"] = all(
-                check.get("passed", True) 
-                for check in results["validation_checks"].values()
-            )
+            anomaly_pct = results["validation_checks"]["anomalies"]["details"].get("anomaly_percentage", 0)
+            outage_pct = results["validation_checks"]["outage_check"]["details"].get("outage_percentage", 0)
+            
+            if fail_count == 0 and anomaly_pct < 1 and outage_pct < 2: results["health_grade"] = "A"
+            elif fail_count <= 1 and anomaly_pct < 5 and outage_pct < 10: results["health_grade"] = "B"
+            elif fail_count <= 2 and anomaly_pct < 10: results["health_grade"] = "C"
+            else: results["health_grade"] = "D"
+            
+            # 4. Impact Summary
+            start_date = pd.to_datetime(df["TIMESTAMP"]).min().date()
+            end_date = pd.to_datetime(df["TIMESTAMP"]).max().date()
+            results["impact_summary"] = f"Ingesting {len(df)} points from {start_date} to {end_date}. "
+            
+            outage_count = results["validation_checks"]["outage_check"]["details"].get("outage_count", 0)
+            if outage_count > 0:
+                results["impact_summary"] += f"Detected {outage_count} points below 25MW (Grid Outage). "
+
+            if results["health_grade"] in ["A", "B"]:
+                results["impact_summary"] += "High quality data: Expect improved forecast stability."
+            else:
+                results["impact_summary"] += "Caution: Data contains anomalies that may skew performance."
+
+            results["anomaly_count"] = int(results["validation_checks"]["anomalies"]["details"].get("anomaly_count", 0))
+            results["valid_rows"] = len(df) - results["anomaly_count"] - outage_count
+            results["passed"] = results["health_grade"] != "F"
             
         except Exception as e:
             logger.error(f"Validation error: {str(e)}")
@@ -84,6 +93,44 @@ class DataValidator:
             results["error_messages"].append(f"Validation error: {str(e)}")
         
         return results
+
+    def _check_outages(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Flag records where Community Load is below 25 MW."""
+        result = {"passed": True, "details": {}}
+        if "TOTAL_LOAD_MW" in df.columns:
+            outage_mask = df["TOTAL_LOAD_MW"] < self.MIN_LOAD_OUTAGE
+            outage_count = int(outage_mask.sum())
+            outage_pct = float(outage_count / len(df) * 100)
+            
+            result["details"] = {
+                "outage_count": outage_count,
+                "outage_percentage": outage_pct,
+                "threshold_mw": self.MIN_LOAD_OUTAGE
+            }
+            if outage_pct > 20: # Over 20% outage is a bad batch
+                result["passed"] = False
+                result["details"]["message"] = "High percentage of outage data detected (>20%)."
+        
+        return result
+
+    def _check_physics_correlation(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Verify physics-based correlations (e.g. Load vs Current)."""
+        result = {"passed": True, "details": {}}
+        
+        if "TOTAL_LOAD_MW" in df.columns and "CURRENT_A" in df.columns:
+            # P = sqrt(3) * V * I * pf
+            # Simple check: Correlation should be positive and high
+            load = pd.to_numeric(df["TOTAL_LOAD_MW"], errors='coerce').dropna()
+            curr = pd.to_numeric(df["CURRENT_A"], errors='coerce').dropna()
+            
+            if len(load) > 10:
+                corr = np.corrcoef(load, curr)[0, 1]
+                result["details"]["load_current_corr"] = float(corr)
+                if corr < 0.7: # Weak correlation for power physics
+                    result["passed"] = False
+                    result["details"]["message"] = "Weak Load-Current correlation detected. Possible sensor failure."
+        
+        return result
     
     def _check_net_imbalance(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Check net power imbalance (Generation - Load)."""

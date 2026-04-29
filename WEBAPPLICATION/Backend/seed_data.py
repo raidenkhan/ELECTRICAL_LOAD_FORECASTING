@@ -15,7 +15,7 @@ from app.db.models.data import ValidatedData, RawDataUpload
 async def seed_data():
     print("Starting data seeding...")
     
-    csv_path = "../../../LOADFORECASINGPROJECT/resampled_data_15min.csv"
+    csv_path = "../../EXTRAS/resampled_data_15min.csv"
     if not os.path.exists(csv_path):
         print(f"Error: CSV file not found at {csv_path}")
         return
@@ -56,8 +56,16 @@ async def seed_data():
     for col in [t1_col, t3_col, t4_col]:
         if col in df.columns:
             df[col] = df[col].fillna(0)
+    
+    # Clip T1 to >= 0 (it is a bank transformer load)
+    df[t1_col] = df[t1_col].clip(lower=0)
             
     df['total_load_mw'] = df[t1_col] + df[t3_col] + df[t4_col]
+    
+    # Remove Outages (Total load < 25 MW is considered grid collapse or sensor failure)
+    initial_len = len(df)
+    df = df[df['total_load_mw'] >= 25.0].copy()
+    print(f"Filtered {initial_len - len(df)} outage rows (< 25 MW). Remaining: {len(df)}")
     
     # Map other columns
     # LINE1 -> NY6ZA_LINE (MW)
