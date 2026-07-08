@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DLinear+H10 · Load Forecasting for Ghana</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:           #000000;
+  --surface:      #0A0A0A;
+  --surface-alt:  #111111;
+  --surface-card: #141414;
+  --border:       #1C1C1C;
+  --border-light: #2A2A2A;
+  --accent:       #C8FF00;
+  --accent-soft:  #D4FF33;
+  --accent-muted: rgba(200,255,0,0.08);
+  --accent-dim:   rgba(200,255,0,0.15);
+  --accent-glow:  rgba(200,255,0,0.20);
+  --success:      #22D47A;
+  --warning:      #FFBD2E;
+  --error:        #FF5F57;
+  --text:         #FFFFFF;
+  --text-second:  #A0A0A0;
+  --text-muted:   #666666;
+  --text-faint:   #333333;
+  --font-heading: 'Instrument Serif', Georgia, serif;
+  --font-body:    'Geist', 'Inter', sans-serif;
+  --font-mono:    'Geist Mono', 'JetBrains Mono', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  overflow: hidden;
+  height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+.viewer { width: 100vw; height: 100vh; overflow: hidden; position: relative; }
+.slides-wrapper {
+  display: flex; flex-direction: column; align-items: center;
+  position: absolute; left: 50%; top: 0; transform-origin: top center;
+}
+.slide {
+  width: 1920px; height: 1080px; flex-shrink: 0; position: relative;
+  overflow: hidden; background: var(--bg); scroll-snap-align: start;
+}
+.slide-grid {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 80px 80px;
+  opacity: 0.10;
+  z-index: 1;
+  pointer-events: none;
+}
+.slide-grid::after {
+  content: ''; position: absolute; inset: 0;
+  background-image: linear-gradient(var(--border-light) 1px, transparent 1px), linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
+  background-size: 320px 320px;
+  opacity: 0.20;
+}
+.slide-grid-wash {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 20%, rgba(200,255,0,0.03) 0%, transparent 70%);
+  z-index: 2; pointer-events: none;
+}
+.slide-glow {
+  position: absolute; width: 500px; height: 500px;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.slide.v .slide-glow { opacity: 1; }
+.slide-glow-tl { top: -150px; left: -150px; background: radial-gradient(circle, rgba(200,255,0,0.10) 0%, transparent 70%); }
+.slide-glow-br { bottom: -150px; right: -150px; background: radial-gradient(circle, rgba(200,255,0,0.05) 0%, transparent 70%); }
+.slide-glow-tr { top: -100px; right: -100px; background: radial-gradient(circle, rgba(200,255,0,0.07) 0%, transparent 70%); }
+.slide-header {
+  position: absolute; left: 120px; top: 48px; z-index: 10;
+  display: flex; align-items: center; gap: 16px;
+}
+.slide-num-label {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+  color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.slide-context { font-size: 11px; color: var(--text-faint); }
+.slide-rule {
+  position: absolute; left: 120px; width: 48px; height: 3px;
+  background: var(--accent); z-index: 10;
+  box-shadow: 0 0 12px rgba(200,255,0,0.4);
+}
+.cover-logo {
+  font-family: var(--font-heading); font-size: 28px; color: var(--text); letter-spacing: -0.01em;
+}
+.cover-logo em { color: var(--accent); font-style: normal; }
+.cover-eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--accent-muted); border: 1px solid rgba(200,255,0,0.18);
+  padding: 6px 16px; font-size: 13px; color: var(--accent-soft);
+  font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 32px;
+  border-radius: 999px;
+}
+.cover-eyebrow-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+.cover-title {
+  font-family: var(--font-heading); font-size: 92px; font-weight: 400;
+  line-height: 0.95; letter-spacing: -0.02em; color: var(--text);
+  margin-bottom: 20px;
+}
+.cover-title em { color: var(--accent); font-style: normal; }
+.cover-sub {
+  font-size: 20px; color: var(--text-second); line-height: 1.6; max-width: 800px; font-weight: 400;
+}
+.meta-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+  z-index: 10; position: absolute;
+  left: 120px; bottom: 60px; width: 600px;
+}
+.meta-grid > div {
+  background: var(--surface-card); padding: 18px 24px;
+}
+.meta-label { font-size: 9px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+.meta-value { font-family: var(--font-mono); font-size: 14px; color: var(--text); }
+.display { font-family: var(--font-heading); font-weight: 400; color: var(--text); }
+.display em { color: var(--accent); font-style: italic; }
+.kicker {
+  font-family: var(--font-body); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+}
+.body-text { font-size: 20px; color: var(--text-second); line-height: 1.7; }
+.sm { font-size: 16px; color: var(--text-second); line-height: 1.65; }
+.mono { font-family: var(--font-mono); }
+.card {
+  background: var(--surface); border: 1px solid var(--border); padding: 28px;
+  border-radius: 12px; transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border-light); }
+.card-bar { border-left: 3px solid var(--accent); }
+.card-accent {
+  background: var(--accent-muted); border: 1px solid rgba(200,255,0,0.18); padding: 28px;
+  border-radius: 12px;
+}
+.card-glass {
+  background: rgba(10,10,10,0.7); backdrop-filter: blur(16px); border: 1px solid var(--border); padding: 28px;
+  border-radius: 12px;
+}
+.card-title { font-family: var(--font-heading); font-size: 32px; font-weight: 400; color: var(--text); margin-bottom: 10px; }
+.card-title em { color: var(--accent); font-style: italic; }
+.data-card { text-align: center; padding: 20px; }
+.data-label { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; font-weight: 600; }
+.data-num { font-family: var(--font-mono); font-size: 48px; font-weight: 500; color: var(--text); line-height: 1; margin-bottom: 6px; }
+.data-desc { font-size: 13px; color: var(--text-muted); }
+.data-num.accent { color: var(--accent); }
+.data-num.success { color: var(--success); }
+.data-num.warning { color: var(--warning); }
+.data-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--accent-muted); border: 1px solid rgba(200,255,0,0.18);
+  padding: 4px 14px; font-size: 12px; color: var(--accent-soft); font-weight: 500;
+  border-radius: 999px;
+}
+.badge-dot { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; }
+.stat-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+  background: var(--surface); border: 1px solid var(--surface);
+  border-radius: 12px; overflow: hidden;
+}
+.stat-cell { background: var(--surface-card); padding: 16px 20px; }
+.stat-cell-label { font-size: 9px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; font-weight: 600; }
+.stat-cell-val { font-family: var(--font-mono); font-size: 34px; font-weight: 500; color: var(--text); line-height: 1; }
+.table-wrap { border: 1px solid var(--border); overflow: hidden; border-radius: 12px; }
+.table-header {
+  display: grid; gap: 0;
+  background: var(--surface-alt); border-bottom: 1px solid var(--border);
+  font-size: 10px; font-weight: 600; color: var(--text-faint);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.table-header > div { padding: 10px 16px; border-right: 1px solid var(--border); }
+.table-header > div:last-child { border-right: none; }
+.table-row {
+  display: grid; gap: 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px; color: var(--text-second);
+}
+.table-row:last-child { border-bottom: none; }
+.table-row > div { padding: 12px 16px; border-right: 1px solid var(--border); display: flex; align-items: center; }
+.table-row > div:last-child { border-right: none; }
+.ul { list-style: none; padding: 0; }
+.ul li {
+  padding: 6px 0; padding-left: 20px; position: relative;
+  font-size: 16px; color: var(--text-second); line-height: 1.65;
+}
+.ul li::before {
+  content: ''; position: absolute; left: 0; top: 14px;
+  width: 5px; height: 5px; background: var(--accent); border-radius: 50%;
+}
+.footer-cite {
+  position: absolute; left: 120px; bottom: 36px; z-index: 10;
+  font-size: 11px; color: var(--text-faint); font-family: var(--font-mono);
+}
+.progress-wrap {
+  position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: var(--border); z-index: 999;
+}
+.progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+.nav-dots {
+  position: fixed; right: 28px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 8px; z-index: 999;
+}
+.nav-dot {
+  width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--text-faint);
+  background: transparent; cursor: pointer; transition: all 0.2s; padding: 0;
+}
+.nav-dot.active { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(200,255,0,0.4); }
+.slide-counter {
+  position: fixed; bottom: 32px; right: 32px; z-index: 999;
+  font-family: var(--font-mono); font-size: 13px; color: var(--text-faint);
+}
+.r, .rl, .rr, .rs { opacity: 0; transform: translateY(24px); transition: all 0.6s cubic-bezier(0.16,1,0.3,1); }
+.rl { transform: translateX(-30px); }
+.rr { transform: translateX(30px); }
+.rs { transform: scale(0.95); }
+.slide.v .r, .slide.v .rl, .slide.v .rr, .slide.v .rs { opacity: 1; transform: none; }
+.d1 { transition-delay: 0.06s; } .d2 { transition-delay: 0.12s; }
+.d3 { transition-delay: 0.18s; } .d4 { transition-delay: 0.24s; }
+.d5 { transition-delay: 0.30s; } .d6 { transition-delay: 0.36s; }
+.d7 { transition-delay: 0.42s; } .d8 { transition-delay: 0.48s; }
+@keyframes glow-pulse {
+  0% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0.5; transform: scale(1); }
+}
+.slide-glow-tl { animation: glow-pulse 6s ease-in-out infinite both; }
+.slide-glow-br { animation: glow-pulse 5s ease-in-out infinite both 0.5s; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.15s !important; }
+  .r, .rl, .rr, .rs { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-wrap"><div class="progress-fill" id="pf"></div></div>
+<nav class="nav-dots" id="nav"></nav>
+<div class="slide-counter" id="counter">01 / 07</div>
+
+<div class="viewer"><div class="slides-wrapper" id="wrapper">
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SLIDE 0: COVER -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="slide" data-i="0">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+  <div class="slide-glow slide-glow-tl"></div>
+  <div class="slide-glow slide-glow-br"></div>
+
+  <div style="position:absolute; left:120px; top:60px; z-index:10;">
+    <span class="cover-logo">KNUST <em>×</em> GridCo</span>
+    <span style="font-size:12px; color:var(--text-faint); margin-left:16px; font-family:var(--font-mono);">LOAD FORECASTING · AI4SD 2026</span>
+  </div>
+
+  <div style="position:absolute; left:120px; top:260px; z-index:10; max-width:1400px;">
+    <div class="cover-eyebrow r"><span class="cover-eyebrow-dot"></span> From First Principles to Production</div>
+    <div class="cover-title r d1">DLinear+H10<br />Load Forecasting <em>for Ghana.</em></div>
+    <div class="cover-sub r d2">91 MW six-fold baseline · 68.9 MW with error correction<br />70,228 hours trained · 2018–2026 · 12.4% CAGR regime</div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:120px; bottom:140px; z-index:10;">
+    <div style="display:flex; gap:24px;">
+      <div><span style="font-family:var(--font-mono); font-size:42px; font-weight:500; color:var(--accent);">91</span><span style="font-size:13px; color:var(--text-muted); margin-left:6px;">MW Raw</span></div>
+      <div style="width:1px; background:var(--border);"></div>
+      <div><span style="font-family:var(--font-mono); font-size:42px; font-weight:500; color:var(--success);">68.9</span><span style="font-size:13px; color:var(--text-muted); margin-left:6px;">MW Corrected</span></div>
+      <div style="width:1px; background:var(--border);"></div>
+      <div><span style="font-family:var(--font-mono); font-size:42px; font-weight:500; color:var(--text);">6</span><span style="font-size:13px; color:var(--text-muted); margin-left:6px;">Fold CV</span></div>
+      <div style="width:1px; background:var(--border);"></div>
+      <div><span style="font-family:var(--font-mono); font-size:42px; font-weight:500; color:var(--warning);">+40%</span><span style="font-size:13px; color:var(--text-muted); margin-left:6px;">Gain from Correction</span></div>
+    </div>
+  </div>
+
+  <div class="r d4" style="position:absolute; right:120px; top:260px; z-index:10; background:var(--surface-card); border:1px solid var(--border); padding:20px 28px; min-width:240px; border-radius:12px;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div><div class="meta-label">Engine</div><div class="meta-value">DLinear + H10 Corrector</div></div>
+      <div><div class="meta-label">Horizons</div><div class="meta-value">1d · 7d · 30d</div></div>
+      <div><div class="meta-label">Training</div><div class="meta-value" style="color:var(--success);">2018–2026 · 70k hrs</div></div>
+      <div><div class="meta-label">Parameters</div><div class="meta-value">~36K · CPU-trainable</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SLIDE 1: THE DATA & WHY MATURE GRIDS FAIL -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="slide" data-i="1">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+  <div class="slide-glow slide-glow-tl"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">01 / Context</span>
+    <span class="slide-context">Why West African grids need different models</span>
+  </div>
+  <div class="slide-rule" style="top:96px;"></div>
+
+  <div style="position:absolute; left:120px; top:160px; z-index:10; width:1680px;">
+    <div class="kicker r">Dataset & Motivation</div>
+    <div class="display r d1" style="font-size:64px;">Why Mature Grid <em>Architectures Fail.</em></div>
+  </div>
+
+  <div class="card r d2" style="position:absolute; left:120px; top:340px; width:1680px; z-index:10;">
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px;">
+      <div>
+        <div class="data-label">Demand Growth</div>
+        <div style="font-family:var(--font-mono); font-size:32px; color:var(--warning);">1,467 → 3,750 MW</div>
+        <div style="font-size:14px; color:var(--text-muted); margin-top:6px;"><strong style="color:var(--text);">12.4% CAGR</strong> over 8 years. The distribution today is not the distribution from 5 years ago. A model trained on 2021 data degrades measurably on 2026 data.</div>
+      </div>
+      <div style="border-left:1px solid var(--border); padding-left:24px;">
+        <div class="data-label">Electrification</div>
+        <div style="font-family:var(--font-mono); font-size:32px; color:var(--accent);">67.2% → 83%</div>
+        <div style="font-size:14px; color:var(--text-muted); margin-top:6px;">Ghana rural electricity access (2018 → 2026 est.). Hundreds of thousands of new households connect each year with unknown load profiles.</div>
+      </div>
+      <div style="border-left:1px solid var(--border); padding-left:24px;">
+        <div class="data-label">Imported Models</div>
+        <div style="font-family:var(--font-mono); font-size:32px; color:var(--error);">Degrade Rapidly</div>
+        <div style="font-size:14px; color:var(--text-muted); margin-top:6px;">European grids have 0–1% annual demand growth with stable distributions. Their models trained on 5-year-old data still perform well. Ours don't.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:120px; top:600px; width:1680px; z-index:10;">
+    <div class="card-accent" style="display:flex; align-items:center; gap:24px; padding:20px 28px;">
+      <div style="font-family:var(--font-mono); font-size:20px; color:var(--accent); font-weight:600;">70,228</div>
+      <div style="width:1px; height:30px; background:rgba(200,255,0,0.2);"></div>
+      <div style="flex:1; font-size:14px; color:var(--text-second);">Hourly readings from ECG, Jan 2018 – May 2026. Features: demand_mw, temperature_c, hour, date. Four universal patterns: daily seasonality, weekly cycle, monthly variation, growth trend.</div>
+      <div class="badge" style="font-size:10px;"><span class="badge-dot"></span> 3.95% sensor gaps filtered</div>
+    </div>
+  </div>
+
+  <div class="footer-cite">CAGR = Compound Annual Growth Rate · Source: ECG SCADA + Ghana Rural Electrification Master Plan</div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SLIDE 2: GRIDCO'S CURRENT APPROACH -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="slide" data-i="2">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+  <div class="slide-glow slide-glow-tr"></div>
+  <div class="slide-glow slide-glow-br"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">02 / Baseline</span>
+    <span class="slide-context">Understanding the operator's existing workflow</span>
+  </div>
+  <div class="slide-rule" style="top:96px;"></div>
+
+  <div style="position:absolute; left:120px; top:160px; z-index:10; width:1680px;">
+    <div class="kicker r">Operator Context</div>
+    <div class="display r d1" style="font-size:64px;">From Excel to <em>Automation.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:120px; top:320px; width:800px; z-index:10;">
+    <div class="card card-bar" style="padding:32px;">
+      <div style="font-family:var(--font-heading); font-size:22px; color:var(--text);">Current Workflow</div>
+      <ul class="ul" style="margin-top:12px;">
+        <li>Dispatchers use a semi-manual Excel-based process</li>
+        <li>Find a similar historical day by experience</li>
+        <li>Adjust for temperature differences manually</li>
+        <li>Populate the dispatch schedule by hand</li>
+        <li>Takes ~45 minutes per forecast</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; right:120px; top:320px; width:760px; z-index:10;">
+    <div class="card-accent" style="padding:32px;">
+      <div style="font-family:var(--font-heading); font-size:22px; color:var(--text);">What We Validated</div>
+      <ul class="ul" style="margin-top:12px;">
+        <li>Digitised the similar-day approach as a KNN model</li>
+        <li>KNN achieved 141 MW MAE</li>
+        <li>A simple 2-day weighted trend beat it: 113 MW MAE</li>
+        <li>Data-driven methods outperform human heuristics</li>
+        <li>Our goal: complement, not replace the operator</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="r d4" style="position:absolute; left:120px; top:660px; width:1680px; z-index:10;">
+    <div class="data-strip" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="card" style="padding:20px; text-align:center;">
+        <div class="data-label">Manual Forecast Time</div>
+        <div class="data-num warning" style="font-size:36px;">45 min</div>
+        <div class="data-desc">Per dispatch schedule · GridCo operator</div>
+      </div>
+      <div class="card" style="padding:20px; text-align:center;">
+        <div class="data-label">KNN Digital Twin</div>
+        <div class="data-num" style="font-size:36px; color:var(--text-faint);">141 MW</div>
+        <div class="data-desc">MAE · Worse than simple trend</div>
+      </div>
+      <div class="card" style="padding:20px; text-align:center;">
+        <div class="data-label">Automated Forecast</div>
+        <div class="data-num success" style="font-size:36px;">~1 min</div>
+        <div class="data-desc">End-to-end · Review + override ready</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-cite">Operator stays in control — forecast is a suggestion they can accept, edit, or override</div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SLIDE 3: DL BENCHMARKING — DLinear WINS -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="slide" data-i="3">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+  <div class="slide-glow slide-glow-tl"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">03 / Benchmarking</span>
+    <span class="slide-context">6-fold expanding-window cross-validation</span>
+  </div>
+  <div class="slide-rule" style="top:96px;"></div>
+
+  <div style="position:absolute; left:120px; top:160px; z-index:10; width:1680px;">
+    <div class="kicker r">Evaluation Strategy</div>
+    <div class="display r d1" style="font-size:64px;">DLinear Wins the <em>Benchmark.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:120px; top:340px; width:1680px; z-index:10;">
+    <div class="table-wrap">
+      <div class="table-header" style="grid-template-columns: 1fr 100px 100px 80px;">
+        <div>Model</div><div>Mean MAE</div><div>+TIDE</div><div>Gain</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 100px 100px 80px;">
+        <div style="color:var(--text);"><strong style="color:var(--accent);">DLinear</strong> · 36K params</div>
+        <div style="font-family:var(--font-mono); color:var(--success); font-weight:600; justify-content:center;">91.0 MW</div>
+        <div style="font-family:var(--font-mono); color:var(--accent); font-weight:600; justify-content:center;">67.0 MW</div>
+        <div style="font-family:var(--font-mono); color:var(--success); justify-content:center;">−26%</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 100px 100px 80px;">
+        <div style="color:var(--text);">CNN (WaveNet)</div>
+        <div style="font-family:var(--font-mono); justify-content:center;">96.8 MW</div>
+        <div style="font-family:var(--font-mono); color:var(--accent); font-weight:600; justify-content:center;">74.2 MW</div>
+        <div style="font-family:var(--font-mono); color:var(--success); justify-content:center;">−23%</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 100px 100px 80px;">
+        <div style="color:var(--text);">LSTM</div>
+        <div style="font-family:var(--font-mono); justify-content:center;">102.3 MW</div>
+        <div style="font-family:var(--font-mono); color:var(--accent); font-weight:600; justify-content:center;">78.9 MW</div>
+        <div style="font-family:var(--font-mono); color:var(--success); justify-content:center;">−23%</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 100px 100px 80px; border-bottom:none;">
+        <div style="color:var(--text);">Transformer</div>
+        <div style="font-family:var(--font-mono); justify-content:center;">108.7 MW</div>
+        <div style="font-family:var(--font-mono); color:var(--accent); font-weight:600; justify-content:center;">82.3 MW</div>
+        <div style="font-family:var(--font-mono); color:var(--success); justify-content:center;">−24%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:120px; top:620px; width:800px; height:300px; z-index:10;">
+    <div class="card" style="padding:20px; height:100%;">
+      <canvas id="c_model_compare"></canvas>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; right:120px; top:620px; width:760px; height:300px; z-index:10;">
+    <div class="card card-bar" style="padding:24px; height:100%;">
+      <div style="font-family:var(--font-heading); font-size:22px; color:var(--text); margin-bottom:12px;">Why DLinear <em style="color:var(--accent); font-style:italic;">Works</em></div>
+      <div class="sm">Decomposes load into <strong style="color:var(--text);">trend</strong> (gradual direction) and <strong style="color:var(--text);">seasonal</strong> (repeating daily/weekly pattern). Each component gets a simple learned weight, plus calendar features (hour, day-of-week, month). These weighted parts sum to the forecast — no attention, no recurrence, no convolutions.</div>
+      <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
+        <div style="display:flex; gap:12px;">
+          <div class="badge" style="font-size:9px;"><span class="badge-dot"></span> 1,000× smaller than ViT</div>
+          <div class="badge" style="font-size:9px;"><span class="badge-dot"></span> Trains on CPU in minutes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-cite">Mean across 6 expanding-window folds · 70,228 hours · +TIDE = Trend-adjusted Iterative Debiasing Engine</div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SLIDE 4: RAW DLinear RESULTS -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="slide" data-i="4">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+  <div class="slide-glow slide-glow-br"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">04 / Performance</span>
+    <span class="slide-context">Baseline before correction — and why CV is essential</span>
+  </div>
+  <div class="slide-rule" style="top:96px;"></div>
+
+  <div style="position:absolute; left:120px; top:160px; z-index:10; width:1680px;">
+    <div class="kicker r">Baseline Metrics</div>
+    <div class="display r d1" style="font-size:64px;">Before Error <em>Correction.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:120px; top:340px; width:480px; z-index:10;">
+    <div class="table-wrap">
+      <div class="table-header" style="grid-template-columns: 1fr 100px 100px;">
+        <div>Horizon</div><div>MAE</div><div>MAPE</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 100px 100px;">
+        <div style="color:var(--text);">Day-Ahead (24h)</div>
+        <div style="font-family:var(--font-mono); justify-content:center;">121 MW</div>
+        <div style="font-family:var(--font-mono); justify-content:center;">4.22%</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 100px 100px;">
+        <div style="color:var(--text);">Week-Ahead (168h)</div>
+        <div style="font-family:var(--font-mono); justify-content:center;">163 MW</div>
+        <div style="font-family:var(--font-mono); justify-content:center;">5.30%</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 100px 100px; border-bottom:none;">
+        <div style="color:var(--text);">Month-Ahead (720h)</div>
+        <div style="font-family:var(--font-mono); justify-content:center;">104 MW</div>
+        <div style="font-family:var(--font-mono); justify-content:center;">3.40%</div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:8px; padding:12px 16px;">
+      <div style="font-size:12px; color:var(--text-muted);">720h lower than 168h because longer horizons average out daily variation</div>
+    </div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:660px; top:340px; width:1140px; z-index:10;">
+    <div class="table-wrap">
+      <div class="table-header" style="grid-template-columns: 80px 1fr 100px 100px;">
+        <div>Fold</div><div>Test Period</div><div>MAE</div><div>Context</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 80px 1fr 100px 100px;">
+        <div style="font-family:var(--font-mono); color:var(--accent);">F1</div><div style="color:var(--text-second);">2021</div><div style="font-family:var(--font-mono); color:var(--warning); justify-content:center;">166 MW</div><div style="font-size:13px; color:var(--text-muted);">COVID recovery disruption</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 80px 1fr 100px 100px;">
+        <div style="font-family:var(--font-mono); color:var(--accent);">F2</div><div style="color:var(--text-second);">2022</div><div style="font-family:var(--font-mono); color:var(--success); justify-content:center;">107 MW</div><div style="font-size:13px; color:var(--text-muted);">Stable recovery</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 80px 1fr 100px 100px;">
+        <div style="font-family:var(--font-mono); color:var(--accent);">F3</div><div style="color:var(--text-second);">2023</div><div style="font-family:var(--font-mono); justify-content:center;">111 MW</div><div style="font-size:13px; color:var(--text-muted);">Moderate growth</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 80px 1fr 100px 100px;">
+        <div style="font-family:var(--font-mono); color:var(--accent);">F4</div><div style="color:var(--text-second);">2024</div><div style="font-family:var(--font-mono); color:var(--error); font-weight:600; justify-content:center;">226 MW</div><div style="font-size:13px; color:var(--text-muted);">Growth discontinuity · <strong style="color:var(--error);">spike</strong></div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 80px 1fr 100px 100px;">
+        <div style="font-family:var(--font-mono); color:var(--accent);">F5</div><div style="color:var(--text-second);">2025</div><div style="font-family:var(--font-mono); color:var(--success); justify-content:center;">92 MW</div><div style="font-size:13px; color:var(--text-muted);">Pattern stabilized</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 80px 1fr 100px 100px; border-bottom:none;">
+        <div style="font-family:var(--font-mono); color:var(--accent);">F6</div><div style="color:var(--text-second);">2026</div><div style="font-family:var(--font-mono); justify-content:center;">121 MW</div><div style="font-size:13px; color:var(--text-muted);">Current · rising demand</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 80px 1fr 100px 100px; border-top:1px dotted var(--border); border-bottom:none;">
+        <div style="font-size:10px; color:var(--text-faint);">σ</div><div style="font-size:10px; color:var(--text-faint);">Mean across folds</div><div style="font-family:var(--font-mono); font-size:10px; color:var(--text-faint); justify-content:center;">110 MW</div><div style="font-size:10px; color:var(--text-faint);">Range: 92–226 MW</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:120px; top:700px; width:1680px; z-index:10;">
+    <div class="card-accent" style="padding:16px 24px;">
+      <div class="sm" style="font-size:14px;"><strong style="color:var(--text);">Why folds matter:</strong> A single train-test split tests only one regime. The 2024 spike (226 MW vs 92 MW in 2025) shows how model rankings change year to year — a model that wins on one test year can fail on another. 6-fold CV reveals which models are genuinely robust.</div>
+    </div>
+  </div>
+
+  <div class="footer-cite">All folds: expanding window · trained on prior years · tested on the labeled year</div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SLIDE 5: ERROR CORRECTION — THE 40% GAIN -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="slide" data-i="5">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+  <div class="slide-glow slide-glow-tl"></div>
+  <div class="slide-glow slide-glow-br"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">05 / Correction</span>
+    <span class="slide-context">Learning from residual autocorrelation</span>
+  </div>
+  <div class="slide-rule" style="top:96px;"></div>
+
+  <div style="position:absolute; left:120px; top:160px; z-index:10; width:1680px;">
+    <div class="kicker r">Error Decomposition</div>
+    <div class="display r d1" style="font-size:64px;">Pushing Further — The <em>40% Gain.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:120px; top:340px; width:800px; height:260px; z-index:10;">
+    <div class="card" style="padding:20px; height:100%;">
+      <canvas id="c_correction"></canvas>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:120px; top:630px; width:800px; z-index:10;">
+    <div class="data-strip" style="grid-template-columns:1fr 1fr; gap:12px;">
+      <div class="card card-accent" style="padding:20px; text-align:center;">
+        <div class="data-label">TIDE Corrector (batch)</div>
+        <div style="font-family:var(--font-mono); font-size:42px; color:var(--accent); font-weight:600;">95.5 MW</div>
+        <div class="data-desc">−20.9% · Zero-parameter filter · Uses recent error history</div>
+      </div>
+      <div class="card card-bar" style="padding:20px; text-align:center;">
+        <div class="data-label">ARDRegression (sequential)</div>
+        <div style="font-family:var(--font-mono); font-size:42px; color:var(--success); font-weight:600;">68.9 MW</div>
+        <div class="data-desc">−40.4% · Requires true err_lag_1 feedback</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; right:120px; top:340px; width:760px; z-index:10;">
+    <div class="card card-bar" style="padding:24px; height:260px;">
+      <div class="sm"><strong style="color:var(--text);">The key insight:</strong> Residual errors have serial correlation ρ = 0.79 (hour t → t+1). This means the error signal is learnable — if DLinear was wrong by +X MW at hour 0, it is likely wrong in the same direction at hour 1.</div>
+      <div class="sm" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);"><strong style="color:var(--warning);">The constraint:</strong> TIDE's 20.9% improvement comes from access to recent error history. ARDRegression with the same features but no error history adds nothing. The dominant signal is time-based autocorrelation, not weather or calendar patterns.</div>
+    </div>
+  </div>
+
+  <div class="r d4" style="position:absolute; right:120px; top:650px; width:760px; z-index:10;">
+    <div class="card" style="padding:20px;">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div style="font-family:var(--font-mono); font-size:24px; color:var(--accent); font-weight:600;">Streaming Opportunity</div>
+        <div style="width:1px; height:24px; background:var(--border);"></div>
+        <div class="sm" style="flex:1;">A streaming architecture — correcting forecast hour-by-hour as actuals arrive — could unlock the full +40% error correction potential in production.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-cite">ρ = 0.79 · error autocorrelation is intra-day only · not exploitable for day-ahead batch</div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SLIDE 6: INTERPRETABILITY & DEPLOYMENT -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="slide" data-i="6">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+  <div class="slide-glow slide-glow-tl"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">06 / Production</span>
+    <span class="slide-context">From research to operator dashboard</span>
+  </div>
+  <div class="slide-rule" style="top:96px;"></div>
+
+  <div style="position:absolute; left:120px; top:160px; z-index:10; width:1680px;">
+    <div class="kicker r">Deployment Architecture</div>
+    <div class="display r d1" style="font-size:64px;">Interpretable & <em>Production-Ready.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:120px; top:340px; width:1680px; z-index:10;">
+    <div class="data-strip" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="card" style="padding:28px;">
+        <div style="font-family:var(--font-mono); font-size:28px; font-weight:600; color:var(--accent); margin-bottom:10px;">01</div>
+        <div style="font-family:var(--font-heading); font-size:22px; color:var(--text); margin-bottom:8px;">DecomEngine</div>
+        <div class="sm">Every forecast is decomposable: trend + seasonal + DOW offset + error correction. Operators can see exactly <em>why</em> a value was predicted — no black box.</div>
+      </div>
+      <div class="card" style="padding:28px;">
+        <div style="font-family:var(--font-mono); font-size:28px; font-weight:600; color:var(--accent); margin-bottom:10px;">02</div>
+        <div style="font-family:var(--font-heading); font-size:22px; color:var(--text); margin-bottom:8px;">Web Application</div>
+        <div class="sm">FastAPI backend + dashboard. GridCo dispatchers use it daily — forecast auto-fills the dispatch schedule. Operators review, edit, or override in ~1 minute.</div>
+      </div>
+      <div class="card" style="padding:28px;">
+        <div style="font-family:var(--font-mono); font-size:28px; font-weight:600; color:var(--accent); margin-bottom:10px;">03</div>
+        <div style="font-family:var(--font-heading); font-size:22px; color:var(--text); margin-bottom:8px;">Semi-Annual Retrain</div>
+        <div class="sm">Designed for 6-month retrain cycle or when rolling MAE degrades >10%. Adaptive L1/L7 trend absorbs short-term shifts between retrains.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:120px; top:610px; width:1680px; z-index:10;">
+    <div class="stat-grid">
+      <div class="stat-cell">
+        <div class="stat-cell-label">Model Explainability</div>
+        <div style="font-family:var(--font-mono); font-size:30px; color:var(--accent);">100%</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">DecomEngine · Level + DOW + Profile</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-cell-label">Retrain Cycle</div>
+        <div style="font-family:var(--font-mono); font-size:30px; color:var(--success);">6 months</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Or when drift exceeds 10%</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-cell-label">Inference Time</div>
+        <div style="font-family:var(--font-mono); font-size:30px; color:var(--success);">&lt;1s</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">CPU · No GPU needed</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-cell-label">Carbon Footprint</div>
+        <div style="font-family:var(--font-mono); font-size:30px; color:var(--warning);">0.003 kWh</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Per training fold · 0.0016 kg CO₂</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="r d4" style="position:absolute; left:120px; bottom:100px; width:1680px; z-index:10;">
+    <div style="border-top:1px solid var(--border); padding-top:20px; display:flex; justify-content:space-between; align-items:center;">
+      <div class="sm" style="font-size:14px; max-width:1100px;">The system is packaged as a web application (FastAPI backend, dashboard) and handed over to GridCo. It replaces a ~45-minute manual Excel workflow with a ~1-minute automated process. Dispatchers stay in control — the forecast is a suggestion they can accept, edit, or override.</div>
+      <div style="text-align:right;">
+        <div style="font-family:var(--font-mono); font-size:11px; color:var(--text-faint);">KNUST × GRIDCo</div>
+        <div style="font-family:var(--font-mono); font-size:11px; color:var(--accent);">DLinear+H10 · PRODUCTION READY</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-cite">Carbon measured with CodeCarbon · single-fold DLinear training on laptop CPU</div>
+</section>
+
+</div></div>
+
+<script>
+const wrapper = document.getElementById('wrapper');
+const slides = document.querySelectorAll('.slide');
+slides[0].classList.add('v');
+const total = slides.length;
+const nav = document.getElementById('nav');
+const pf = document.getElementById('pf');
+const counter = document.getElementById('counter');
+
+for (let i = 0; i < total; i++) {
+  const d = document.createElement('button');
+  d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+  d.addEventListener('click', () => slides[i].scrollIntoView({ behavior: 'smooth' }));
+  nav.appendChild(d);
+}
+
+function fitSlide() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const scale = Math.min(vw / 1920, vh / 1080);
+  wrapper.style.transform = `translateX(-50%) scale(${scale})`;
+  const offsetY = (vh - 1080 * scale) / 2;
+  wrapper.style.marginTop = offsetY > 0 ? offsetY + 'px' : '0';
+}
+fitSlide();
+window.addEventListener('resize', fitSlide);
+
+const obs = new IntersectionObserver((entries) => {
+  for (const entry of entries) {
+    if (entry.isIntersecting) {
+      slides.forEach(s => s.classList.remove('v'));
+      entry.target.classList.add('v');
+      const idx = parseInt(entry.target.dataset.i);
+      document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+      const pct = ((idx + 1) / total) * 100;
+      pf.style.width = pct + '%';
+      counter.textContent = String(idx + 1).padStart(2, '0') + ' / ' + String(total).padStart(2, '0');
+    } else {
+      entry.target.classList.remove('v');
+    }
+  }
+}, { threshold: 0.3 });
+slides.forEach(s => obs.observe(s));
+
+document.addEventListener('keydown', (e) => {
+  const cur = document.querySelector('.slide.v');
+  if (!cur) return;
+  const idx = parseInt(cur.dataset.i);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+    e.preventDefault();
+    if (idx < total - 1) slides[idx + 1].scrollIntoView({ behavior: 'smooth' });
+  } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    if (idx > 0) slides[idx - 1].scrollIntoView({ behavior: 'smooth' });
+  } else if (e.key === 'Home') { slides[0].scrollIntoView({ behavior: 'smooth' }); }
+  else if (e.key === 'End') { slides[total - 1].scrollIntoView({ behavior: 'smooth' }); }
+});
+
+let wheelLocked = false;
+wrapper.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (wheelLocked) return;
+  const cur = document.querySelector('.slide.v');
+  if (!cur) return;
+  const idx = parseInt(cur.dataset.i);
+  const next = idx + (e.deltaY > 0 ? 1 : -1);
+  if (next < 0 || next >= total) return;
+  wheelLocked = true;
+  slides[next].scrollIntoView({ behavior: 'smooth' });
+  setTimeout(() => { wheelLocked = false; }, 500);
+}, { passive: false });
+
+// ── Charts ──
+const ac = '#C8FF00', mu = '#666666', gr = '#1C1C1C', sc = '#22D47A', wa = '#FFBD2E', er = '#FF5F57', da = '#333333';
+Chart.defaults.font.family = "'Geist', sans-serif";
+Chart.defaults.color = mu;
+
+// Model comparison (slide 3)
+new Chart(document.getElementById('c_model_compare'), {
+  type: 'bar',
+  data: {
+    labels: ['DLinear', 'CNN', 'LSTM', 'Transformer'],
+    datasets: [
+      {
+        label: 'Raw (MW)',
+        data: [91.0, 96.8, 102.3, 108.7],
+        backgroundColor: da,
+        borderRadius: 0,
+      },
+      {
+        label: '+TIDE (MW)',
+        data: [67.0, 74.2, 78.9, 82.3],
+        backgroundColor: ac,
+        borderRadius: 0,
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { boxWidth: 12, padding: 8, font: { size: 10, weight: '600' }, color: mu } },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 }, color: mu } },
+      y: { beginAtZero: true, grid: { color: gr, drawTicks: false }, ticks: { font: { size: 10 }, color: mu } }
+    }
+  }
+});
+
+// Error correction comparison (slide 5)
+new Chart(document.getElementById('c_correction'), {
+  type: 'bar',
+  data: {
+    labels: ['Baseline', 'TIDE', 'SMA-7d', 'Kalman', 'ARD Batch', 'ARD Sequential'],
+    datasets: [{
+      label: 'MAE (MW)',
+      data: [115.6, 95.5, 106, 98, 115, 68.9],
+      backgroundColor: ctx => {
+        const v = ctx.dataIndex;
+        if (v === 0) return da;
+        if (v === 1) return wa;
+        if (v === 5) return ac;
+        return '#1C1C1C';
+      },
+      borderRadius: 0,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          afterLabel: ctx => {
+            const vals = [0, 1, 2, 3, 4, 5];
+            const gains = ['—', '−20.9%', '−8.3%', '−15.2%', '−0.5%', '−40.4%'];
+            return 'Gain: ' + gains[ctx.dataIndex];
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 }, color: mu, maxTicksLimit: 8 } },
+      y: { beginAtZero: true, grid: { color: gr, drawTicks: false }, ticks: { font: { size: 10 }, color: mu } }
+    }
+  }
+});
+</script>
+</body>
+</html>

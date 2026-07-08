@@ -167,15 +167,16 @@ export function LoadChart({
 
           <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--brand-teal)', strokeWidth: 1, strokeDasharray: '4 4' }} />
 
-          {/* Uncertainty Band */}
+          {/* Uncertainty Band - use range array for proper area */}
           {showUncertainty && (
             <Area
               type="monotone"
-              dataKey="upperBound"
-              data={data.map(d => ({ ...d, range: [d.lowerBound, d.upperBound] }))}
+              dataKey="range"
+              data={data.map(d => ({ ...d, range: d.lowerBound && d.upperBound ? [d.lowerBound, d.upperBound] : null }))}
               fill="var(--brand-teal)"
-              fillOpacity={0.12}
-              stroke="none"
+              fillOpacity={0.15}
+              stroke="var(--brand-teal)"
+              strokeWidth={0}
               connectNulls
             />
           )}

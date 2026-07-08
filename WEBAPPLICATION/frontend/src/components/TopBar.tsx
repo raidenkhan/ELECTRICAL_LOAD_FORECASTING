@@ -1,5 +1,6 @@
-import { Bell, User, ChevronRight, Moon, Sun, Activity } from 'lucide-react';
+import { Bell, User, ChevronRight, Moon, Sun, Thermometer } from 'lucide-react';
 import { useSystem } from '@/context/SystemContext';
+import { useEffect, useState } from 'react';
 
 interface TopBarProps {
   breadcrumbs: string[];
@@ -7,28 +8,37 @@ interface TopBarProps {
   onLogout?: () => void;
   theme?: string;
   onThemeToggle?: () => void;
-  viewMode?: 'analytics' | 'control-room';
-  onViewModeChange?: (mode: 'analytics' | 'control-room') => void;
 }
 
 export function TopBar({ 
   breadcrumbs, 
   onLogout, 
   theme, 
-  onThemeToggle, 
-  viewMode, 
-  onViewModeChange 
+  onThemeToggle 
 }: TopBarProps) {
-  const { lastSync, secondsSinceSync, isStale } = useSystem();
+  const { secondsSinceSync, isStale } = useSystem();
+  const [currentTemp, setCurrentTemp] = useState<number | null>(null);
 
-  const formatTime = (date: Date | null) => {
-    if (!date) return '--:--:--';
-    return date.toLocaleTimeString([], { hour12: false });
-  };
+  useEffect(() => {
+    const fetchTemp = async () => {
+      try {
+        const res = await fetch('http://localhost:8000/api/v1/forecast/dispatch/current-temp');
+        if (res.ok) {
+          const data = await res.json();
+          setCurrentTemp(data.temperature_c);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    fetchTemp();
+    const interval = setInterval(fetchTemp, 5 * 60 * 1000); // every 5 min
+    return () => clearInterval(interval);
+  }, []);
 
   const getSyncColor = () => {
     if (isStale) return 'text-[var(--status-crimson)]';
-    if (secondsSinceSync > 300) return 'text-[var(--status-amber)]'; // 5 mins
+    if (secondsSinceSync > 300) return 'text-[var(--status-amber)]';
     return 'text-[var(--status-emerald)]';
   };
 
@@ -49,33 +59,9 @@ export function TopBar({
         ))}
       </div>
 
-      {/* Center Toggle (Themed Tactical Switch) */}
-      <div className="hidden lg:flex items-center bg-[var(--surface-secondary)]/60 p-1 rounded-sm border border-[var(--divider)]">
-        <button
-          onClick={() => onViewModeChange?.('analytics')}
-          className={`px-4 py-1.5 rounded-sm text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-200
-            ${viewMode === 'analytics' 
-              ? 'bg-[var(--brand-blue)] text-white shadow-[0_0_15px_rgba(0,51,153,0.3)]' 
-              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-        >
-          Analytics
-        </button>
-        <button
-          onClick={() => onViewModeChange?.('control-room')}
-          className={`px-4 py-1.5 rounded-sm text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-200
-            ${viewMode === 'control-room' 
-              ? 'bg-[var(--brand-blue)] text-white shadow-[0_0_15px_rgba(0,51,153,0.3)]' 
-              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-        >
-          Control Room
-        </button>
-      </div>
-
       {/* Right Cluster */}
       <div className="flex items-center gap-4">
-        {/* Heartbeat & Sync Status */}
+        {/* Sync Status + Temperature */}
         <div className="hidden md:flex items-center gap-3 mr-4">
           <div className="flex flex-col items-end">
             <div className="flex items-center gap-1.5">
@@ -85,10 +71,10 @@ export function TopBar({
               <div className={`w-1.5 h-1.5 rounded-full ${isStale ? 'bg-red-500' : 'bg-emerald-500'} animate-pulse shadow-[0_0_8px] shadow-emerald-500/50`} />
             </div>
             <span className="text-[9px] font-mono text-[var(--text-muted)] uppercase tracking-tighter">
-              T+{secondsSinceSync}s
+              {currentTemp !== null ? `${currentTemp.toFixed(1)}°C Accra` : '--°C'}
             </span>
           </div>
-          <Activity className={`w-4 h-4 ${getSyncColor()} opacity-40`} />
+          <Thermometer className={`w-4 h-4 ${currentTemp !== null ? 'text-[var(--brand-blue)]' : 'text-[var(--text-muted)]'} opacity-60`} />
         </div>
 
         <button 

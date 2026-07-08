@@ -1,0 +1,26 @@
+graph TD
+    A[Raw SCADA Stream] --> B{Regime Detector}
+    B -- "Normal (Regime 0)" --> C[Neural Expert]
+    B -- "Stress/Outage (Regime 1)" --> D[Structural Expert]
+    
+    subgraph "Structural Expert"
+    D1[Holt-Damped Trend] --> D4[Summation]
+    D2[Seasonal Profiles] --> D4
+    D3[Piecewise Temp Knot] --> D4
+    end
+    
+    subgraph "Neural Expert"
+    C1[1D-CNN: Ramp Extraction] --> C2[BiLSTM: Temporal Context]
+    C2 --> C3[Sobolev Trajectory Loss]
+    end
+    
+    D4 --> E[Gating Logic]
+    C3 --> E
+    
+    E --> F[Grid Stress Index GSI]
+    F --> G[Fused Final Forecast]
+    
+    subgraph "Physics Constraints"
+    H[YoY Growth 8%] -.-> D1
+    I[Horizon Awareness h/7] -.-> C2
+    end

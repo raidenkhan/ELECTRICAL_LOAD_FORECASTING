@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # FastAPI Application
+  api:
+    build: 
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: loadforecast_api
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Backend/models:/app/models
+      - ./Backend/data:/app/data
+      - ./Backend/logs:/app/logs
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - loadforecast_network
+
+  # TimescaleDB (PostgreSQL with time-series extension)
+  db:
+    image: timescale/timescaledb:latest-pg15
+    container_name: loadforecast_db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME:-loadforecast}
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - loadforecast_network
+
+  # Redis for caching and task queue
+  redis:
+    image: redis:7-alpine
+    container_name: loadforecast_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - loadforecast_network
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+    container_name: loadforecast_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - loadforecast_network
+
+volumes:
+  timescale_data:
+  redis_data:
+
+networks:
+  loadforecast_network:
+    driver: bridge

@@ -1,0 +1,5 @@
+Autoformer: 8.3042
+LightGBM: 20.3086
+Stationary_Fusion: 12.1040
+Adaptive_Fusion: 8.5767
+Improvement: -3.28%

@@ -1,0 +1,30 @@
+POWERPOINT PRESENTATION MONDAY
+First remember that initially we set out to use a very basic model of the load
+   We said we use us a simple decomposition with components that mean these
+
+   1. Demand has **patterns** (people use more power at 7PM than 3AM) (profiles)
+   2. Demand has a **trend** (more people join the grid every year) -> trend means how it's growing year by year
+   3. Demand changes with **weather** (more AC on hot days) --> wather patterns
+   4. Demand has **momentum** (if demand spiked an hour ago, it might stay high) --> previous changes
+   This approach because :
+      has NO static parameters. Everything is computed "on the fly" from recent history at prediction time.
+
+   Compare to a neural network — a NN has fixed weights learned during training. This engine has **zero learned weights** — it adapts purely from statistics of recent data.
+hence this is likely to last because retraining might not be needed (you just upload new data and then we adapt the parametres)
+
+
+We also stated some hours being hard to forecast than others ( and because of that we provide a quantile or uncertainty forecast instead of point forecast)
+   -->metion those hours 
+
+In our evaluations we use a cv evaluation (explain cv why it shows the correctness of our thinking, instead of train test split)
+
+Deep learning models :
+   So far we considered most sota deep learning models (lstm,gru,transformer)-->atm these are still in training but add reasons from all our chats why these might not beat it and even if they do the downside with how these systems change quickly from year to year, add the cagr(also explain what cagr means) changes
+Most Recent conversation with gridco:
+   Met up with gridco rep again and he confirmed that they were making an error of around 1.6% in january and 1.2 % in february but around 7% in march (24 hrs ahead)
+   in march it was around 7 %
+   -->investigate this
+   Our model doesn't reach the 1.6% but consistently stays below 5 % across all folds
+   However these error bands aren't really nice saying because the mean of the data sits around 3700 but so just 1% error is around 37mw wrongly predicted so it's huge
+Next steps is to meet up with gridco again to discuss our findings
+also we would now focus on deep learning refinement and architecture although my hypothesis is that this might not be very good production wise even if they produce very stunning accuracies in short term

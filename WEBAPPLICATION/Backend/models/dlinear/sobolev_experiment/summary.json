@@ -1,0 +1,116 @@
+{
+  "lambda_0.0": {
+    "mean_mae": 0.2767061666666667,
+    "mean_mae_mw": 134.92780144113345,
+    "mean_ramp_mae": 0.18624583333333333,
+    "mean_peak_ramp": 3.3834293333333334,
+    "fold_results": {
+      "Fold_1": {
+        "mae": 0.310153,
+        "ramp_mae": 0.220267,
+        "peak_ramp": 3.669161
+      },
+      "Fold_2": {
+        "mae": 0.275017,
+        "ramp_mae": 0.195619,
+        "peak_ramp": 3.228927
+      },
+      "Fold_3": {
+        "mae": 0.268998,
+        "ramp_mae": 0.18781,
+        "peak_ramp": 2.378243
+      },
+      "Fold_4": {
+        "mae": 0.269538,
+        "ramp_mae": 0.179961,
+        "peak_ramp": 3.671317
+      },
+      "Fold_5": {
+        "mae": 0.263865,
+        "ramp_mae": 0.175083,
+        "peak_ramp": 4.671241
+      },
+      "Fold_6": {
+        "mae": 0.272666,
+        "ramp_mae": 0.158735,
+        "peak_ramp": 2.681687
+      }
+    }
+  },
+  "lambda_0.3": {
+    "mean_mae": 0.2752345,
+    "mean_mae_mw": 134.21018553043803,
+    "mean_ramp_mae": 0.18605533333333332,
+    "mean_peak_ramp": 3.391716666666667,
+    "fold_results": {
+      "Fold_1": {
+        "mae": 0.309604,
+        "ramp_mae": 0.220408,
+        "peak_ramp": 3.635123
+      },
+      "Fold_2": {
+        "mae": 0.274634,
+        "ramp_mae": 0.194676,
+        "peak_ramp": 3.192168
+      },
+      "Fold_3": {
+        "mae": 0.268295,
+        "ramp_mae": 0.185954,
+        "peak_ramp": 2.352028
+      },
+      "Fold_4": {
+        "mae": 0.268555,
+        "ramp_mae": 0.179303,
+        "peak_ramp": 3.690339
+      },
+      "Fold_5": {
+        "mae": 0.261886,
+        "ramp_mae": 0.173219,
+        "peak_ramp": 4.718677
+      },
+      "Fold_6": {
+        "mae": 0.268433,
+        "ramp_mae": 0.162772,
+        "peak_ramp": 2.761965
+      }
+    }
+  },
+  "lambda_1.0": {
+    "mean_mae": 0.2743541666666667,
+    "mean_mae_mw": 133.78091630730177,
+    "mean_ramp_mae": 0.18522666666666668,
+    "mean_peak_ramp": 3.394087666666667,
+    "fold_results": {
+      "Fold_1": {
+        "mae": 0.306584,
+        "ramp_mae": 0.21724,
+        "peak_ramp": 3.690241
+      },
+      "Fold_2": {
+        "mae": 0.273943,
+        "ramp_mae": 0.193794,
+        "peak_ramp": 3.190171
+      },
+      "Fold_3": {
+        "mae": 0.267261,
+        "ramp_mae": 0.186215,
+        "peak_ramp": 2.360329
+      },
+      "Fold_4": {
+        "mae": 0.269244,
+        "ramp_mae": 0.181114,
+        "peak_ramp": 3.720524
+      },
+      "Fold_5": {
+        "mae": 0.260926,
+        "ramp_mae": 0.174516,
+        "peak_ramp": 4.701761
+      },
+      "Fold_6": {
+        "mae": 0.268167,
+        "ramp_mae": 0.158481,
+        "peak_ramp": 2.7015
+      }
+    }
+  }
+}

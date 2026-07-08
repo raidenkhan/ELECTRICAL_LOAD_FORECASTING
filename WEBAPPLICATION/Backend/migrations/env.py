@@ -9,6 +9,9 @@ from alembic import context
 # Import your models here
 from app.db.base import Base
 from app.db.models.data import RawDataUpload, ValidationReport, ValidatedData
+from app.db.models.schedule import DailyDispatchSchedule, HourlyDemand, HourlySupply
+from app.db.models.ecg_history import EcgHistoricalDemand
+from app.db.models.baseload import BaseloadPlant
 
 # this is the Alembic Config object
 config = context.config

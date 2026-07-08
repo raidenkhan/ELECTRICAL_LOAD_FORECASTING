@@ -9,7 +9,7 @@ interface ExplainabilityModalProps {
 }
 
 export function ExplainabilityModal({ isOpen, onClose }: ExplainabilityModalProps) {
-  const [decomData, setDecomData] = useState<{ peak_mw: number, peak_timestamp: string, components: { name: string, value: number, color: string }[] } | null>(null);
+  const [decomData, setDecomData] = useState<{ peak_mw: number, peak_hour: number, mean_mw: number, components: { name: string, value: number, color: string }[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export function ExplainabilityModal({ isOpen, onClose }: ExplainabilityModalProp
                 </div>
               </div>
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {isLoading ? 'Decomposing signal...' : `Peak Demand Analysis: ${decomData?.peak_mw} MW at ${decomData ? new Date(decomData.peak_timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}`}
+                {isLoading ? 'Decomposing signal...' : `Peak Demand Analysis: ${decomData?.peak_mw} MW at H${(decomData?.peak_hour ?? 0).toString().padStart(2, '0')}:00`}
               </p>
             </div>
             <button
@@ -170,7 +170,7 @@ export function ExplainabilityModal({ isOpen, onClose }: ExplainabilityModalProp
         {/* Footer */}
         <div className="p-6 border-t bg-gray-50/50 flex items-center justify-between" style={{ borderColor: 'var(--border-primary)' }}>
           <p className="text-[10px] text-gray-400 font-medium">
-            Model: LTLF-Recursive-v2.1
+            Model: DLinear+TIDE v2.0
           </p>
           <div className="flex gap-3">
             <button

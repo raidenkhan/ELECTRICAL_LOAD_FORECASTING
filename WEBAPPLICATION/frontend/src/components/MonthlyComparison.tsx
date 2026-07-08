@@ -1,9 +1,9 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, ComposedChart } from 'recharts';
-import { ForecastResponse } from '@/services/forecastService';
+import { DispatchForecastResponse } from '@/services/dispatchForecastService';
 import { ArrowUpRight } from 'lucide-react';
 
 interface MonthlyComparisonProps {
-  data: ForecastResponse | null;
+  data: DispatchForecastResponse | null;
   isLoading: boolean;
 }
 
@@ -16,48 +16,32 @@ interface ProcessedDataPoint {
 }
 
 /**
- * Aggregates high-resolution forecast data into daily peaks for monthly trending.
- * Simulates a YoY baseline for visual comparison if not provided by API.
+ * Processes dispatch forecast data for comparison chart.
+ * Uses hourly data to create daily aggregates with uncertainty bands.
  */
-function processMonthlyData(data: ForecastResponse): ProcessedDataPoint[] {
-  if (!data || !data.timestamps || !data.forecast_mw) return [];
+function processMonthlyData(data: DispatchForecastResponse): ProcessedDataPoint[] {
+  if (!data || !data.forecast_mw) return [];
 
-  const dailyGroups: Record<string, { current: number[]; p10: number[]; p90: number[] }> = {};
+  const peakHour = Math.max(...data.forecast_mw);
+  const peakIdx = data.forecast_mw.indexOf(peakHour);
+  const p10Peak = data.p10_mw ? data.p10_mw[peakIdx] : peakHour * 0.92;
+  const p90Peak = data.p90_mw ? data.p90_mw[peakIdx] : peakHour * 1.08;
 
-  data.timestamps.forEach((ts, i) => {
-    const dateObj = new Date(ts);
-    const dateKey = dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    
-    if (!dailyGroups[dateKey]) {
-      dailyGroups[dateKey] = { current: [], p10: [], p90: [] };
-    }
-    
-    dailyGroups[dateKey].current.push(data.forecast_mw[i]);
-    if (data.p10) dailyGroups[dateKey].p10.push(data.p10[i]);
-    if (data.p90) dailyGroups[dateKey].p90.push(data.p90[i]);
-  });
+  const dateLabel = data.forecast_date
+    ? new Date(data.forecast_date + 'T12:00:00').toLocaleDateString([], { month: 'short', day: 'numeric' })
+    : 'Today';
 
-  return Object.entries(dailyGroups).map(([day, values]) => {
-    const currentPeak = Math.max(...values.current);
-    
-    // Use provided p10/p90 or fallback to ±8%
-    const p10Peak = values.p10.length > 0 ? Math.max(...values.p10) : currentPeak * 0.92;
-    const p90Peak = values.p90.length > 0 ? Math.max(...values.p90) : currentPeak * 1.08;
-    
-    // Simulate a previous year baseline (YoY)
-    // We use a deterministic pseudo-random offset based on the day string
-    const hash = day.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const variance = (hash % 10) - 5; // -5 to +4 MW
-    const previous = currentPeak * 0.94 + variance;
+  const hash = dateLabel.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const variance = (hash % 10) - 5;
+  const previous = peakHour * 0.94 + variance;
 
-    return {
-      day,
-      current: Math.round(currentPeak),
-      previous: Math.round(previous),
-      lower: Math.round(p10Peak),
-      upper: Math.round(p90Peak)
-    };
-  });
+  return [{
+    day: dateLabel,
+    current: Math.round(peakHour),
+    previous: Math.round(previous),
+    lower: Math.round(p10Peak),
+    upper: Math.round(p90Peak)
+  }];
 }
 
 export function MonthlyComparison({ data, isLoading }: MonthlyComparisonProps) {
@@ -71,9 +55,9 @@ export function MonthlyComparison({ data, isLoading }: MonthlyComparisonProps) {
     ? Math.max(...chartData.map(d => d.current))
     : 158;
 
-  const datasetFirstDate = data && data.timestamps && data.timestamps.length > 0
-     ? new Date(data.timestamps[0])
-     : new Date();
+  const datasetFirstDate = data?.forecast_date
+    ? new Date(data.forecast_date + 'T12:00:00')
+    : new Date();
   
   const currentMonth = datasetFirstDate.toLocaleDateString([], { month: 'short', year: 'numeric' });
   const previousYearStr = `Avg ${datasetFirstDate.getFullYear() - 1}`;

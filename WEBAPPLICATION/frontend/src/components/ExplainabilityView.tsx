@@ -29,7 +29,8 @@ import { StatusBadge } from './StatusBadge';
 export function ExplainabilityView() {
     const [decompData, setDecompData] = useState<{ 
         peak_mw: number, 
-        peak_timestamp: string, 
+        peak_hour: number, 
+        mean_mw: number,
         components: { name: string, value: number, color: string }[] 
     } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -58,13 +59,13 @@ export function ExplainabilityView() {
 
     // Component descriptions for Ghanaian Grid context
     const componentDescriptions: Record<string, string> = {
-        'Base Trend': 'Long-term load trajectory reflecting organic industrial and population growth in the Nayagina-82 catchment.',
+        'Base Trend': 'Long-term load trajectory reflecting organic industrial and population growth across the GRIDCo network.',
         'Seasonal Rhythm': 'Daily and weekly cyclic patterns driven by institutional schedules and residential behavior.',
         'Temperature Impact': 'Additional load attributed to HVAC systems and cooling demand based on regional temperature gradients.',
         'Holiday Adjustment': 'Reduction in commercial and industrial load due to standard Ghanaian public holidays.',
         'Rain Suppression': 'Suppression of AC and heating demand during precipitation events as observed in operator interviews.',
         'Line Efficiency': 'Gain in system throughput due to lower resistive losses in transition lines during cooler weather.',
-        'Short-term Bias': 'Real-time error correction managed by the adaptive Kalman layer to sync with latest SCADA.'
+        'Short-term Bias': 'Real-time error correction managed by the adaptive Kalman layer to sync with latest readings.'
     };
 
     return (
@@ -107,7 +108,7 @@ export function ExplainabilityView() {
                     value={peakLoad || '---'}
                     unit="MW"
                     status="amber"
-                    subtext={`At ${decompData?.peak_timestamp ? new Date(decompData.peak_timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '---'}`}
+                    subtext={`At H${(decompData?.peak_hour ?? 0).toString().padStart(2, '0')}:00`}
                 />
                 <MetricCard
                     label="Base Load"
@@ -197,7 +198,7 @@ export function ExplainabilityView() {
                                </div>
                                <h4 className="text-[13px] font-bold text-[var(--text-primary)]">{d.name}</h4>
                                <p className="text-[11px] text-[var(--text-secondary)] italic border-l border-[var(--divider)] pl-3 leading-relaxed">
-                                  {componentDescriptions[d.name] || 'Operational factor affecting Nayagina-82 substation dynamics.'}
+                                   {componentDescriptions[d.name] || 'Operational factor affecting GRIDCo grid dynamics.'}
                                 </p>
                             </div>
                          ))}

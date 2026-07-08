@@ -1,0 +1,2 @@
+Autoformer MSE: h=1 98.39 -> h=24 2203.94
+LightGBM MSE: h=1 23.64 -> h=24 119.55

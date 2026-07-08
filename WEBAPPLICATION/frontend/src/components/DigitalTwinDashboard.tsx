@@ -1,253 +1,488 @@
-import React, { useState, useMemo } from 'react';
-import { MetricCard } from './MetricCard';
-import { StatusBadge } from './StatusBadge';
-import { LoadChart } from './LoadChart';
-import { GenerationUnit } from './GenerationUnit';
-import { AlertBanner } from './AlertBanner';
-import { Layers, TrendingUp, Zap, Wind, HardHat, Globe } from 'lucide-react';
+'use client';
 
-// Enhanced Mock data generator for the Power Balance Planner
-const generatePlannerData = (temp: number, use8PercentRule: boolean) => {
-  return Array.from({ length: 24 }).map((_, i) => {
-    const time = `${i.toString().padStart(2, '0')}:00`;
-    
-    // Core physics: Domestic load is 90% and weather-driven
-    const baseDomestic = 85 + Math.sin(i / 12 * Math.PI) * 25;
-    const tempEffect = Math.max(0, temp - 24) * 2.6; // 2.6 coefficient from interview
-    let domestic = baseDomestic + tempEffect;
-    
-    // Apply GRIDCo Strategic Rule (8% YoY increment) if active
-    if (use8PercentRule) {
-      domestic = domestic * 1.08;
-    }
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, ComposedChart, Line, Legend,
+} from 'recharts';
+import {
+  Zap, Activity, TrendingUp, Calendar, Thermometer, Clock,
+  ArrowUp, ArrowDown, Loader2, AlertTriangle, Layers, Building2,
+} from 'lucide-react';
+import { dispatchForecastService, DispatchForecastResponse } from '@/services/dispatchForecastService';
+import { scheduleService, ScheduleDetail } from '@/services/scheduleService';
 
-    // Industrial load (Flat-ish as mentioned in interview: VALCO 100MW + Mines)
-    const industrial = 120 + (Math.random() * 5); 
-    
-    // Exports (CEB/SONABEL mentioned as ~347MW total)
-    const exports = 347 + (Math.random() * 10 - 5);
+function formatHour(h: number) {
+  return `${h.toString().padStart(2, '0')}:00`;
+}
 
-    const projected = domestic + industrial + exports;
-    
-    return {
-      time,
-      domestic,
-      industrial,
-      exports,
-      projected,
-      baseline: projected * 0.95
-    };
-  });
+const ENTITY_COLORS: Record<string, string> = {
+  ECG: '#58a6ff',
+  NEDCo: '#3fb950',
+  VALCO: '#facc15',
+  Mines: '#f85149',
+  Export: '#bc8cff',
+};
+
+const ENTITY_LABELS: Record<string, string> = {
+  ECG: 'ECG Demand',
+  NEDCo: 'NEDCo',
+  VALCO: 'VALCO',
+  Mines: 'Mines',
+  Export: 'Export',
 };
 
 export function DigitalTwinDashboard() {
-  const [temperature, setTemperature] = useState(32);
-  const [plannerMode, setPlannerMode] = useState<'balance' | 'strategic'>('balance');
-  const [use8PercentRule, setUse8PercentRule] = useState(false);
-  
-  const chartData = useMemo(() => generatePlannerData(temperature, use8PercentRule), [temperature, use8PercentRule]);
-  
-  const totalDemand = chartData[14]?.projected || 0;
-  const domesticLoad = chartData[14]?.domestic || 0;
-  
-  // Real-time Elasticity Calculation (800MW drop mentioned for 5C change)
-  const elasticityPerDegree = 160; // 800 / 5 = 160 MW/C
-  const potentialSavings = (temperature - 27) * elasticityPerDegree;
+  const [forecast, setForecast] = useState<DispatchForecastResponse | null>(null);
+  const [schedule, setSchedule] = useState<ScheduleDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [chartMode, setChartMode] = useState<'stacked' | 'entities' | 'total'>('stacked');
 
-  return (
-    <div className="flex flex-col gap-6 h-full font-sans">
-      
-      {/* 3-Column Workspace */}
-      <div className="flex flex-1 min-h-[500px]">
-        
-        {/* LEFT PANEL: Power Balance Controls */}
-        <div className="w-[300px] flex-shrink-0 flex flex-col glass-panel p-5 mr-6">
-          <div className="flex flex-col gap-8">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-black text-[var(--brand-blue)] uppercase tracking-[0.3em]">Operational Planning</span>
-              <h3 className="text-[18px] font-bold text-[var(--text-primary)]">Power Balance</h3>
-            </div>
-            
-            {/* Instant Temperature Pivot */}
-            <div className="flex flex-col py-2">
-              <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Thermal Pivot (27°C - 32°C)</span>
-              <div className="p-4 bg-[var(--surface-secondary)]/60 rounded border border-[var(--divider)] mb-4 text-center">
-                  <span className="text-3xl font-black text-[var(--text-primary)]">{temperature}°C</span>
-                  <div className="flex justify-between mt-2 micro-num opacity-40 uppercase">
-                    <span>Wet/Rain</span>
-                    <span>High Peak</span>
-                  </div>
-              </div>
-              
-              <input 
-                type="range" min="24" max="40" step="0.5"
-                value={temperature}
-                onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                className="w-full transition-all accent-[var(--brand-blue)]"
-              />
-              
-              <div className="mt-6 p-3 bg-blue-500/10 border border-blue-500/20 rounded flex items-center gap-3">
-                 <Wind className="w-5 h-5 text-blue-400" />
-                 <div>
-                    <p className="text-[10px] font-bold uppercase text-blue-300">Cooling Gain</p>
-                    <p className="text-lg font-black text-white">-{Math.round(potentialSavings)} MW</p>
-                 </div>
-              </div>
-            </div>
+  useEffect(() => {
+    async function fetch() {
+      try {
+        setLoading(true);
+        const [forecastData, scheduleData] = await Promise.all([
+          dispatchForecastService.getTomorrow().catch(() => null),
+          scheduleService.getLatestSchedule().catch(() => null),
+        ]);
+        setForecast(forecastData);
+        setSchedule(scheduleData);
+      } catch (err: any) {
+        setError(err?.response?.data?.detail || 'Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetch();
+  }, []);
 
-            {/* Strategic Rule Toggle */}
-            <div className="flex flex-col gap-3">
-              <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Strategic Horizon</span>
-              <button 
-                onClick={() => setUse8PercentRule(!use8PercentRule)}
-                className={`w-full p-4 rounded border flex flex-col items-center gap-1 transition-all
-                  ${use8PercentRule ? 'bg-indigo-600 border-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.3)]' : 'bg-[var(--surface-secondary)] border-[var(--divider)] hover:border-[var(--brand-blue)]'}
-                `}
-              >
-                <TrendingUp className={`w-5 h-5 ${use8PercentRule ? 'text-white' : 'text-[var(--brand-blue)]'}`} />
-                <span className={`text-[11px] font-black uppercase ${use8PercentRule ? 'text-white' : 'text-[var(--text-primary)]'}`}>
-                   GRIDCo 8% Growth Rule
-                </span>
-                <span className="text-[9px] text-white/50 uppercase tracking-tighter">Applied to Domestic Base</span>
-              </button>
-            </div>
+  const entityNames = useMemo(() => {
+    if (!schedule) return [];
+    return [...new Set(schedule.demand.map(d => d.entity_name))]
+      .filter(e => e !== 'NITS_Total');
+  }, [schedule]);
 
-            {/* Demand Category Distribution */}
-            <div className="flex flex-col gap-3 mt-4">
-              <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Demand Composition</span>
-              <div className="space-y-2">
-                 <CategoryBadge label="Domestic (ECG)" value="90%" icon={<Globe className="w-3 h-3"/>} color="#3498db" />
-                 <CategoryBadge label="Industrial (Mines)" value="~120MW" icon={<HardHat className="w-3 h-3"/>} color="#e67e22" />
-                 <CategoryBadge label="Exports" value="347MW" icon={<Zap className="w-3 h-3"/>} color="#9b59b6" />
-              </div>
-            </div>
-          </div>
-        </div>
+  const scheduleData = useMemo(() => {
+    if (!schedule) return null;
+    const entities = ['ECG', 'NEDCo', 'VALCO', 'Mines', 'Export'].filter(e => entityNames.includes(e));
+    if (entities.length === 0) return null;
 
-        {/* CENTER PANEL: Stacked Load Planner */}
-        <div className="flex-1 min-w-0 flex flex-col glass-panel p-5 overflow-hidden mx-0 border-t-4 border-t-[var(--brand-blue)]">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-3">
-               <Layers className="w-4 h-4 text-[var(--brand-blue)]" />
-               <h2 className="headline text-[var(--text-primary)] uppercase tracking-widest text-[12px] font-black">System Balance Planner</h2>
-            </div>
-            <div className="flex gap-2">
-               <button 
-                 onClick={() => setPlannerMode('balance')}
-                 className={`px-4 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-widest border transition-all
-                   ${plannerMode === 'balance' ? 'bg-[var(--brand-blue)] border-[var(--brand-blue)] text-white' : 'border-[var(--divider)] text-[var(--text-muted)]'}
-                 `}
-               >Demand Stack</button>
-               <button 
-                 onClick={() => setPlannerMode('strategic')}
-                 className={`px-4 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-widest border transition-all
-                   ${plannerMode === 'strategic' ? 'bg-[var(--brand-blue)] border-[var(--brand-blue)] text-white' : 'border-[var(--divider)] text-[var(--text-muted)]'}
-                 `}
-               >Forecast View</button>
-            </div>
-          </div>
-          
-          <div className="flex-1 min-h-0">
-            <LoadChart 
-              data={chartData} 
-              liveMarkerTime="14:00" 
-              viewType={plannerMode === 'balance' ? 'stacked' : 'default'}
-              height={440}
-            />
-          </div>
+    // Build per-entity per-hour map
+    const entityMap: Record<string, Record<number, number>> = {};
+    for (const e of entities) entityMap[e] = {};
 
-          <div className="mt-6 p-4 bg-[var(--surface-secondary)]/40 border border-[var(--divider)] rounded flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                 <div className="flex flex-col">
-                    <span className="caption text-[var(--text-muted)] uppercase font-black">System Total</span>
-                    <span className="text-xl font-black text-[var(--text-primary)]">{Math.round(totalDemand)} MW</span>
-                 </div>
-                 <div className="w-px h-8 bg-[var(--divider)]" />
-                 <div className="flex flex-col">
-                    <span className="caption text-[var(--text-muted)] uppercase font-black text-[#3498db]">Domestic</span>
-                    <span className="text-xl font-black text-[#3498db]">{Math.round(domesticLoad)} MW</span>
-                 </div>
-              </div>
-              <div className="text-right">
-                 <p className="text-[10px] text-[var(--text-muted)] italic leading-tight max-w-[200px]">
-                    "90% dependent on what happens in our homes" — NCC Planning Interview
-                 </p>
-              </div>
-          </div>
-        </div>
+    for (const d of schedule.demand) {
+      if (entityMap[d.entity_name]) {
+        entityMap[d.entity_name][d.hour] = d.demand_mw;
+      }
+    }
 
-        {/* RIGHT PANEL: Balance Intelligence */}
-        <div className="w-[320px] flex-shrink-0 flex flex-col glass-panel p-5 ml-6">
-           <h2 className="headline text-[var(--text-secondary)] uppercase tracking-widest text-[11px]">Planning Intelligence</h2>
-           
-           <div className="space-y-6">
-              <StatusBadge status={temperature > 35 ? 'critical' : 'stable'} label={temperature > 35 ? 'Heat Stress Threshold' : 'Stable Operating Regime'} pulse />
+    const nitsTotal: Record<number, number> = {};
+    for (const d of schedule.demand) {
+      if (d.entity_name === 'NITS_Total') {
+        nitsTotal[d.hour] = d.demand_mw;
+      }
+    }
 
-              <div className="h-px bg-[var(--divider)]" />
+    return Array.from({ length: 24 }, (_, i) => {
+      const h = i + 1;
+      const point: Record<string, any> = {
+        hour: formatHour(h),
+        hourNum: h,
+      };
+      for (const e of entities) {
+        point[e] = entityMap[e][h] ?? 0;
+      }
+      point.NITS_Total = nitsTotal[h] ?? 0;
+      return point;
+    });
+  }, [schedule, entityNames]);
 
-              {/* GRIDCo Physical Knot Analysis */}
-              <div className="space-y-4">
-                 <p className="text-[11px] font-bold text-[var(--text-primary)] uppercase flex items-center gap-2">
-                    <Zap className="w-3.5 h-3.5 text-yellow-500" /> Physical Knot Analysis
-                 </p>
-                 <div className="space-y-3">
-                    <KnotItem label="AC Saturation Point" value="24.0°C" status="active" />
-                    <KnotItem label="Thermal Elasticity" value="2.6 MW/°C" status="active" />
-                    <KnotItem label="Line Efficiency Gain" value={temperature < 22 ? "+1.5%" : "Baseline"} status={temperature < 22 ? 'active' : 'idle'} />
-                 </div>
-              </div>
+  const combinedChartData = useMemo(() => {
+    if (scheduleData) return scheduleData;
 
-              <div className="h-px bg-[var(--divider)]" />
+    // Fallback: use forecast data only
+    if (!forecast) return [];
+    return forecast.forecast_mw.map((mw, i) => {
+      const h = i + 1;
+      return {
+        hour: formatHour(h),
+        hourNum: h,
+        ECG: Math.round(mw),
+      };
+    });
+  }, [forecast, scheduleData]);
 
-              {/* Reserve Margin Monitor */}
-              <div className="p-4 bg-[var(--surface-secondary)] border border-[var(--divider)] rounded-lg">
-                <span className="caption text-[var(--text-muted)] uppercase tracking-widest font-bold">Projected Reserve</span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className={`metric-num text-5xl font-bold leading-none
-                    ${totalDemand > 1800 ? 'text-[var(--status-crimson)] animate-pulse' : 'text-emerald-500'}
-                  `}>
-                    {Math.round(2100 - totalDemand)}
-                  </span>
-                  <span className="text-[16px] font-bold text-[var(--text-secondary)] uppercase">MW</span>
-                </div>
-                <div className="h-1.5 w-full bg-gray-800 rounded-full mt-4 overflow-hidden">
-                   <div className="h-full bg-emerald-500" style={{ width: `${Math.max(0, (2100 - totalDemand) / 2100 * 100)}%` }} />
-                </div>
-              </div>
+  const peak = useMemo(() => {
+    if (combinedChartData.length === 0) return null;
+    return combinedChartData.reduce((a: any, b: any) => {
+      const valA = a.NITS_Total || a.ECG || 0;
+      const valB = (b as any).NITS_Total || (b as any).ECG || 0;
+      return valA > valB ? a : b;
+    });
+  }, [combinedChartData]);
 
-              <AlertBanner 
-                severity={totalDemand > 1800 ? 'critical' : 'info'}
-                message={totalDemand > 1800 ? 'Insufficient spinning reserve at peak' : 'Generation fleet meets demand stack requirements'}
-              />
-           </div>
+  const totalDayDemand = useMemo(() => {
+    if (combinedChartData.length === 0) return 0;
+    return combinedChartData.reduce((s, d: any) => s + (d.NITS_Total || d.ECG || 0), 0);
+  }, [combinedChartData]);
+
+  const avgDemand = useMemo(() => {
+    if (combinedChartData.length === 0) return 0;
+    return Math.round(totalDayDemand / combinedChartData.length);
+  }, [combinedChartData, totalDayDemand]);
+
+  const supplyEntities = useMemo(() => {
+    if (!schedule) return [];
+    return [...new Set(schedule.supply.map(s => s.plant_name))];
+  }, [schedule]);
+
+  const supplyChartData = useMemo(() => {
+    if (!schedule) return null;
+    return Array.from({ length: 24 }, (_, i) => {
+      const h = i + 1;
+      const point: Record<string, any> = { hour: formatHour(h), hourNum: h };
+      for (const plant of supplyEntities) {
+        point[plant] = schedule.supply.filter(s => s.plant_name === plant && s.hour === h).reduce((a, b) => a + b.supply_mw, 0);
+      }
+      return point;
+    });
+  }, [schedule, supplyEntities]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 text-[var(--brand-blue)] animate-spin" />
+          <span className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-widest">Loading Control Room...</span>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-function CategoryBadge({ label, value, icon, color }: { label: string, value: string, icon: React.ReactNode, color: string }) {
+  if (error && !forecast && !schedule) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4 max-w-md text-center">
+          <AlertTriangle className="w-10 h-10 text-[var(--status-crimson)]" />
+          <p className="text-sm font-bold text-[var(--status-crimson)]">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 text-xs font-bold border border-[var(--border-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const hasFullSchedule = scheduleData !== null && scheduleData.length > 0;
+
   return (
-    <div className="flex items-center justify-between p-2 rounded border border-white/5 bg-white/5">
-       <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded flex items-center justify-center" style={{ backgroundColor: `${color}20`, color: color }}>
-             {icon}
+    <div className="flex flex-col gap-5 h-full">
+
+      {/* Top Bar */}
+      <div className="flex items-center justify-between px-4 py-3 bg-[var(--bg-card)] border border-[var(--border-card)]">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-[var(--status-amber)]" />
+            <h1 className="text-base font-bold text-[var(--text-primary)]">Control Room</h1>
           </div>
-          <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight">{label}</span>
-       </div>
-       <span className="text-[10px] font-black font-mono text-[var(--text-primary)]">{value}</span>
-    </div>
-  );
-}
+          <span className="text-xs text-[var(--text-muted)]">|</span>
+          <span className="text-xs text-[var(--text-secondary)]">
+            <Calendar className="w-3.5 h-3.5 inline mr-1" />
+            {schedule?.date ?? forecast?.forecast_date ?? '—'}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          {hasFullSchedule && (
+            <span className="flex items-center gap-1.5 text-xs text-[var(--status-emerald)]">
+              <span className="w-2 h-2 rounded-full bg-[var(--status-emerald)] animate-pulse" />
+              Schedule Loaded
+            </span>
+          )}
+          <span className="text-xs px-2 py-1 border border-[var(--border-card)] text-[var(--text-muted)]">
+            24-Hour Dispatch
+          </span>
+        </div>
+      </div>
 
-function KnotItem({ label, value, status }: { label: string, value: string, status: 'active' | 'idle' }) {
-  return (
-    <div className="flex justify-between items-center">
-       <span className="text-[11px] text-[var(--text-muted)]">{label}</span>
-       <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono font-bold text-[var(--text-primary)]">{value}</span>
-          <div className={`w-1.5 h-1.5 rounded-full ${status === 'active' ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'bg-gray-600'}`} />
-       </div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          {
+            label: 'Peak Demand',
+            value: peak ? Math.round((peak as any).NITS_Total || (peak as any).ECG || 0).toLocaleString() : '—',
+            unit: 'MW',
+            sub: peak ? `Hour ${peak.hourNum} (${peak.hour})` : '—',
+            accent: 'var(--status-amber)',
+          },
+          {
+            label: 'Total Energy',
+            value: Math.round(totalDayDemand).toLocaleString(),
+            unit: 'MWh',
+            sub: '24-hour total',
+            accent: 'var(--brand-blue)',
+          },
+          {
+            label: 'Average Load',
+            value: avgDemand.toLocaleString(),
+            unit: 'MW',
+            sub: '24h mean',
+            accent: 'var(--text-primary)',
+          },
+          {
+            label: 'Entities',
+            value: entityNames.length > 0 ? entityNames.length.toString() : (forecast ? '1' : '—'),
+            unit: entityNames.length > 0 ? 'demand groups' : 'ECG only',
+            sub: schedule ? `${supplyEntities.length} supply sources` : '',
+            accent: 'var(--status-emerald)',
+          },
+        ].map((kpi, i) => (
+          <div key={i} className="bg-[var(--bg-card)] border border-[var(--border-card)] px-4 py-3">
+            <p className="text-[11px] uppercase tracking-[0.8px] text-[var(--text-muted)] font-semibold">{kpi.label}</p>
+            <p className="text-2xl font-bold mt-1" style={{ color: kpi.accent, fontVariantNumeric: 'tabular-nums' }}>
+              {kpi.value} <span className="text-sm font-semibold text-[var(--text-muted)]">{kpi.unit}</span>
+            </p>
+            <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{kpi.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Main Content */}
+      <div className="flex flex-1 gap-5 min-h-[400px]">
+
+        {/* LEFT PANEL: Snapshot */}
+        <div className="w-[240px] flex-shrink-0 flex flex-col gap-4">
+          {hasFullSchedule && entityNames.length > 0 && (
+            <div className="bg-[var(--bg-card)] border border-[var(--border-card)] p-4">
+              <h3 className="text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Building2 className="w-3.5 h-3.5 text-[var(--brand-blue)]" /> Demand Mix
+              </h3>
+              <div className="space-y-2">
+                {entityNames.map((name) => {
+                  const total = schedule!.demand
+                    .filter(d => d.entity_name === name)
+                    .reduce((a, b) => a + b.demand_mw, 0);
+                  const avg = Math.round(total / 24);
+                  const share = totalDayDemand > 0 ? Math.round((total / totalDayDemand) * 100) : 0;
+                  return (
+                    <div key={name} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ENTITY_COLORS[name] || 'var(--text-muted)' }} />
+                        <span className="text-[var(--text-secondary)]">{ENTITY_LABELS[name] || name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[var(--text-primary)]" style={{ fontVariantNumeric: 'tabular-nums' }}>{avg.toLocaleString()}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] w-8 text-right">{share}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {supplyEntities.length > 0 && (
+            <div className="bg-[var(--bg-card)] border border-[var(--border-card)] p-4">
+              <h3 className="text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Zap className="w-3.5 h-3.5 text-[var(--status-emerald)]" /> Supply Sources
+              </h3>
+              <div className="space-y-2">
+                {supplyEntities.map((plant) => {
+                  const total = schedule!.supply
+                    .filter(s => s.plant_name === plant)
+                    .reduce((a, b) => a + b.supply_mw, 0);
+                  const avg = Math.round(total / 24);
+                  return (
+                    <div key={plant} className="flex items-center justify-between text-xs">
+                      <span className="text-[var(--text-secondary)]">{plant}</span>
+                      <span className="font-bold text-[var(--text-primary)]" style={{ fontVariantNumeric: 'tabular-nums' }}>{avg.toLocaleString()} MW</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {forecast?.factors && (
+            <div className="bg-[var(--bg-card)] border border-[var(--border-card)] p-4">
+              <h3 className="text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Activity className="w-3.5 h-3.5 text-[var(--status-amber)]" /> Forecast Factors
+              </h3>
+              <div className="space-y-1.5 text-xs">
+                {[
+                  { label: 'Seasonal Range', value: `${(Math.max(...forecast.factors.seasonal_ratio) * 100 - 100).toFixed(1)}% / ${(Math.min(...forecast.factors.seasonal_ratio) * 100 - 100).toFixed(1)}%` },
+                  { label: 'Temp Sensitivity', value: `${(Math.max(...forecast.factors.temp_ratio) * 100 - 100).toFixed(1)}%` },
+                  { label: 'Growth Mult', value: forecast.factors.growth_ratio[0].toFixed(4) },
+                ].map((f, i) => (
+                  <div key={i} className="flex justify-between py-1 border-b border-[var(--divider)] last:border-0">
+                    <span className="text-[var(--text-muted)]">{f.label}</span>
+                    <span className="font-bold text-[var(--text-primary)]">{f.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* CENTER: Main Chart */}
+        <div className="flex-1 min-w-0 bg-[var(--bg-card)] border border-[var(--border-card)] p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-sm font-bold text-[var(--text-primary)]">
+                {hasFullSchedule ? 'System Demand Breakdown' : 'ECG Demand Forecast'}
+              </h2>
+              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                {hasFullSchedule ? 'All entities · Hourly MW' : '24-hour forecast · Hourly MW'}
+              </p>
+            </div>
+            {hasFullSchedule && entityNames.length > 0 && (
+              <div className="flex border border-[var(--border-card)]">
+                {(['stacked', 'entities', 'total'] as const).map(mode => (
+                  <button
+                    key={mode}
+                    onClick={() => setChartMode(mode)}
+                    className={`px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                      chartMode === mode
+                        ? 'bg-[var(--surface-secondary)] text-[var(--text-primary)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                    }`}
+                  >
+                    {mode === 'stacked' ? 'Stacked' : mode === 'entities' ? 'Grouped' : 'Total'}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="h-[380px]">
+            <ResponsiveContainer width="100%" height="100%">
+              {chartMode === 'stacked' && hasFullSchedule && entityNames.length > 0 ? (
+                <AreaChart data={combinedChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="0" stroke="var(--chart-grid)" vertical={false} strokeWidth={0.5} />
+                  <XAxis dataKey="hour" stroke="var(--text-muted)" fontSize={10} tickMargin={8} axisLine={false} tickLine={false} interval={0} />
+                  <YAxis stroke="var(--text-muted)" fontSize={11} tickMargin={8} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 0, fontSize: 12 }}
+                    formatter={(value: number, name: string) => [`${Math.round(value).toLocaleString()} MW`, ENTITY_LABELS[name] || name]}
+                    labelFormatter={(label: string) => `Hour ${label}`}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                    formatter={(value: string) => ENTITY_LABELS[value] || value}
+                  />
+                  {entityNames.map(name => (
+                    <Area
+                      key={name}
+                      type="monotone"
+                      dataKey={name}
+                      stackId="1"
+                      stroke={ENTITY_COLORS[name]}
+                      fill={ENTITY_COLORS[name]}
+                      fillOpacity={0.6}
+                      name={name}
+                    />
+                  ))}
+                </AreaChart>
+              ) : chartMode === 'entities' && hasFullSchedule ? (
+                <BarChart data={combinedChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="0" stroke="var(--chart-grid)" vertical={false} strokeWidth={0.5} />
+                  <XAxis dataKey="hour" stroke="var(--text-muted)" fontSize={10} tickMargin={8} axisLine={false} tickLine={false} interval={0} />
+                  <YAxis stroke="var(--text-muted)" fontSize={11} tickMargin={8} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 0, fontSize: 12 }}
+                    formatter={(value: number) => [`${Math.round(value).toLocaleString()} MW`]}
+                    labelFormatter={(label: string) => `Hour ${label}`}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                    formatter={(value: string) => ENTITY_LABELS[value] || value} />
+                  {entityNames.map(name => (
+                    <Bar
+                      key={name}
+                      dataKey={name}
+                      fill={ENTITY_COLORS[name]}
+                      stackId="a"
+                      maxBarSize={20}
+                      name={name}
+                    />
+                  ))}
+                </BarChart>
+              ) : (
+                <ComposedChart data={combinedChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="0" stroke="var(--chart-grid)" vertical={false} strokeWidth={0.5} />
+                  <XAxis dataKey="hour" stroke="var(--text-muted)" fontSize={10} tickMargin={8} axisLine={false} tickLine={false} interval={0} />
+                  <YAxis stroke="var(--text-muted)" fontSize={11} tickMargin={8} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 0, fontSize: 12 }}
+                    formatter={(value: number) => [`${Math.round(value).toLocaleString()} MW`]}
+                    labelFormatter={(label: string) => `Hour ${label}`}
+                  />
+                  <Bar
+                    dataKey="NITS_Total"
+                    fill="var(--brand-blue)"
+                    radius={[2, 2, 0, 0]}
+                    maxBarSize={28}
+                    name="NITS Total"
+                    shape={(props: any) => {
+                      const { x, y, width, height, payload } = props;
+                      const isPeak = payload.hourNum === peak?.hourNum;
+                      return <rect x={x} y={y} width={width} height={height} fill={isPeak ? 'var(--status-amber)' : 'var(--brand-blue)'} rx={2} />;
+                    }}
+                  />
+                  {hasFullSchedule && (
+                    <Line
+                      type="monotone"
+                      dataKey="NITS_Total"
+                      stroke="var(--brand-blue)"
+                      strokeWidth={0}
+                      dot={false}
+                      activeDot={false}
+                      name="NITS Total"
+                    />
+                  )}
+                </ComposedChart>
+              )}
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* RIGHT PANEL: Hourly values */}
+        <div className="w-[200px] flex-shrink-0 flex flex-col gap-4">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-card)] p-4 flex-1">
+            <h3 className="text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest mb-3">Hourly Values</h3>
+            <div className="space-y-0.5 max-h-[420px] overflow-y-auto">
+              {combinedChartData.map((d) => {
+                const val = (d as any).NITS_Total || (d as any).ECG || 0;
+                const isPeak = d.hourNum === peak?.hourNum;
+                const maxVal = peak ? ((peak as any).NITS_Total || (peak as any).ECG || 1) : 1;
+                return (
+                  <div
+                    key={d.hourNum}
+                    className={`flex items-center justify-between text-xs px-2 py-1 ${
+                      isPeak ? 'bg-[var(--status-amber)]/10 border-l-2 border-[var(--status-amber)]' : 'hover:bg-[var(--surface-secondary)]'
+                    }`}
+                  >
+                    <span className="text-[var(--text-muted)] w-10">{d.hour}</span>
+                    <div className="flex items-center gap-1.5 flex-1 justify-end">
+                      <div className="h-1.5 bg-[var(--brand-blue)]/25 rounded-full" style={{ width: `${Math.max(4, (val / maxVal) * 50)}px` }} />
+                      <span
+                        className={`font-bold w-14 text-right ${isPeak ? 'text-[var(--status-amber)]' : 'text-[var(--text-primary)]'}`}
+                        style={{ fontVariantNumeric: 'tabular-nums' }}
+                      >
+                        {Math.round(val).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

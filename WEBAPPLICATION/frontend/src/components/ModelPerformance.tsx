@@ -50,8 +50,8 @@ export function ModelPerformance() {
             <span className="caption text-[var(--text-muted)] uppercase font-bold tracking-widest">Champion Model</span>
           </div>
           <div>
-            <p className="headline text-[var(--text-primary)]">Decomp-Physics v4.0</p>
-            <p className="micro-num text-[var(--text-muted)] mt-1">Multiplicative Structural Engine</p>
+            <p className="headline text-[var(--text-primary)]">DLinear+TIDE v2.0</p>
+            <p className="micro-num text-[var(--text-muted)] mt-1">6-Fold Ensemble + TIDE Corrector</p>
           </div>
         </div>
 
@@ -90,8 +90,8 @@ export function ModelPerformance() {
       <div className="glass-panel p-6">
         <div className="flex justify-between items-center mb-6">
           <div className="flex flex-col">
-            <h2 className="headline text-[var(--text-primary)]">Decomp vs. GRIDCo Similar-Day</h2>
-            <p className="text-[11px] text-[var(--text-muted)] italic">Comparing structural engine vs. historical heuristic over last 3 hours</p>
+            <h2 className="headline text-[var(--text-primary)]">DLinear+TIDE vs. Baseline WT+DOW</h2>
+            <p className="text-[11px] text-[var(--text-muted)] italic">Comparing DLinear+TIDE vs. statistical baseline over recent hours</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">

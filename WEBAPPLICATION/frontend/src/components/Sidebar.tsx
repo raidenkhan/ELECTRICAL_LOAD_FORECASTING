@@ -1,12 +1,9 @@
 import {
-  LayoutDashboard,
-  Calendar,
-  TrendingUp,
   Upload,
   Settings,
   Activity,
-  Zap,
-  CheckCircle2
+  CheckCircle2,
+  BarChart3
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -21,27 +18,25 @@ export function Sidebar({ activeView, onViewChange, userRole }: SidebarProps) {
     {
       label: 'Dashboard',
       items: [
-        { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
-        { id: 'live-monitor', label: 'Live Monitoring', icon: <Activity className="w-4 h-4" /> }
+        { id: 'overview', label: 'Control Room', icon: <Activity className="w-4 h-4" /> }
       ]
     },
     {
-      label: 'Planning',
+      label: 'Forecasting',
       items: [
-        { id: 'planner', label: 'Planning', icon: <Calendar className="w-4 h-4" /> }
+        { id: 'forecast', label: 'ECG Forecast', icon: <BarChart3 className="w-4 h-4" /> }
       ]
     },
     {
-      label: 'Analytics',
+      label: 'Operations',
       items: [
-        { id: 'model-performance', label: 'Model Performance', icon: <TrendingUp className="w-4 h-4" /> },
-        { id: 'explainability', label: 'Explainability', icon: <Zap className="w-4 h-4" /> }
+        { id: 'dispatch', label: 'Dispatch Schedule', icon: <CheckCircle2 className="w-4 h-4" /> },
+        { id: 'data-upload', label: 'Data Management', icon: <Upload className="w-4 h-4" /> }
       ]
     },
     {
       label: 'System',
       items: [
-        { id: 'data-upload', label: 'Data Management', icon: <Upload className="w-4 h-4" /> },
         { id: 'settings', label: 'Settings', icon: <Settings className="w-4 h-4" /> }
       ]
     }
@@ -51,8 +46,10 @@ export function Sidebar({ activeView, onViewChange, userRole }: SidebarProps) {
     <div className="h-screen w-[200px] flex flex-col border-r bg-white/40 dark:bg-gray-900/40 backdrop-blur-2xl border-white/10 dark:border-white/5 z-50">
       {/* Brand Header */}
       <div className="px-5 py-6 flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <Zap className="w-5 h-5 text-[var(--brand-indigo)] fill-[var(--brand-indigo)]" />
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 bg-[var(--brand-blue)] flex items-center justify-center shadow-sm">
+            <span className="text-white text-[13px] font-black tracking-tight">G</span>
+          </div>
           <h1 className="text-[14px] font-bold tracking-tight text-[var(--text-primary)]">
             GRIDCo Forecast Pro
           </h1>

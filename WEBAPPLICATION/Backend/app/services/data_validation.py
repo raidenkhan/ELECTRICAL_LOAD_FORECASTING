@@ -4,7 +4,7 @@ from typing import Dict, Any, Tuple
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
-
+# we should update the data validation class
 
 class DataValidator:
     """Physics-based validation for SCADA load data."""

@@ -143,7 +143,7 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
             <div className="grid grid-cols-3 gap-8 pt-12 border-t border-border/50">
               <ShowcaseStat label="GRID CAPACITY" value="4.2 GW" icon={Activity} />
               <ShowcaseStat label="SYSTEM UPTIME" value="99.2%" icon={Shield} />
-              <ShowcaseStat label="GRANULARITY" value="15 MIN" icon={Cpu} />
+              <ShowcaseStat label="GRANULARITY" value="1 HOUR" icon={Cpu} />
             </div>
           </motion.div>
 
@@ -159,7 +159,7 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
               <div className="absolute -top-1 -left-1 w-6 h-6 border-t-2 border-l-2 border-primary" />
               <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-2 border-r-2 border-primary" />
 
-              <div className="flex bg-muted p-1 border border-border mb-10">
+              <div className="flex bg-surface-alt p-1 border border-border mb-10">
                 <AuthTab active={activeTab === 'login'} onClick={() => setActiveTab('login')} label="SIGN IN" />
                 <AuthTab active={activeTab === 'signup'} onClick={() => setActiveTab('signup')} label="GET ACCESS" />
               </div>
@@ -186,7 +186,7 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
                             <select
                               value={selectedRegion}
                               onChange={(e) => setSelectedRegion(e.target.value)}
-                              className="w-full h-14 bg-muted border border-border px-6 text-sm text-foreground focus:border-primary focus:ring-0 appearance-none outline-none transition-all"
+                              className="w-full h-14 bg-surface-alt border border-border px-6 text-sm text-foreground focus:border-primary focus:ring-0 appearance-none outline-none transition-all"
                               style={{ fontFamily: 'var(--font-geist-mono)', borderRadius: 0 }}
                             >
                               {regions.map(r => (
@@ -210,7 +210,7 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
                                   key={role.id}
                                   type="button"
                                   onClick={() => setSelectedRole(role.id as UserRole)}
-                                  className={`p-4 border text-left transition-all ${isSelected ? 'border-primary bg-primary/5' : 'border-border bg-muted hover:border-muted-foreground'}`}
+                                   className={`p-4 border text-left transition-all ${isSelected ? 'border-primary bg-primary/5' : 'border-border bg-surface-alt hover:border-primary/50'}`}
                                 >
                                   <Icon className={`w-4 h-4 mb-2 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
                                   <div className={`text-[10px] font-black tracking-widest uppercase ${isSelected ? 'text-foreground' : 'text-muted-foreground'}`} style={{ fontFamily: 'var(--font-geist-mono)' }}>
@@ -233,7 +233,7 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
 
                         <div className="flex items-center justify-between pt-2">
                           <label className="flex items-center gap-3 cursor-pointer group">
-                            <div className="w-4 h-4 border border-border group-hover:border-primary transition-colors bg-muted flex items-center justify-center">
+                            <div className="w-4 h-4 border border-border group-hover:border-primary transition-colors bg-surface-alt flex items-center justify-center">
                               <div className="w-2 h-2 bg-primary scale-0 group-active:scale-100 transition-transform" />
                             </div>
                             <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase" style={{ fontFamily: 'var(--font-geist-mono)' }}>
@@ -266,7 +266,7 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
       </section>
 
       {/* 4. FEATURES SECTION */}
-      <section id="features" className="py-24 border-b border-border bg-muted/30">
+      <section id="features" className="py-24 border-b border-border bg-surface/50">
         <div className="max-w-[1600px] mx-auto px-8 lg:px-24">
           <div className="flex flex-col lg:flex-row gap-24">
             <div className="lg:w-1/3 space-y-8">
@@ -292,7 +292,7 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
               <FeatureCard
                 icon={Cpu}
                 title="SOTA Architectures"
-                desc="Hybrid LSTM-Transformer ensemble models achieving 95%+ accuracy in complex tropical demand profiles."
+                desc="DLinear 6-fold ensemble with TIDE adaptive bias correction achieving 67 MW / 2.8% MAPE on D+1 under high-demand growth conditions."
               />
               <FeatureCard
                 icon={Globe}
@@ -315,12 +315,12 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
           <div className="max-w-3xl space-y-8">
             <h2 className="text-6xl font-black tracking-tighter italic text-primary">RECURSIVE HORIZON ROUTING</h2>
             <p className="text-xl text-muted-foreground font-light leading-relaxed">
-              Our proprietary <span className="text-foreground font-medium">multi-vector pipeline</span> ensures that whether the forecast is for the next 15 minutes or the next 7 days, the most accurate neural regime is selected dynamically.
+              Our proprietary <span className="text-foreground font-medium">multi-horizon pipeline</span> uses a DLinear 6-fold ensemble for hourly forecasts with TIDE (Temporal Integration of Demand Errors) adaptive bias correction — delivering 67 MW MAE on D+1 with calibrated P10/P90 uncertainty bands.
             </p>
           </div>
 
           {/* Interactive Architecture Map/Diagram Mockup */}
-          <div className="relative w-full max-w-5xl aspect-video bg-muted border border-border group">
+          <div className="relative w-full max-w-5xl aspect-video bg-surface border border-border group">
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="grid grid-cols-4 gap-12 relative w-full px-24">
                 <ArchNode icon={Database} label="DATA INGEST" active />
@@ -347,7 +347,7 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
       </section>
 
       {/* 6. KALMAN FUSION TECHNOLOGY SECTION */}
-      <section id="kalman" className="py-32 border-b border-border bg-muted/20">
+      <section id="kalman" className="py-32 border-b border-border bg-surface/30">
         <div className="max-w-[1600px] mx-auto px-8 lg:px-24 space-y-24">
           <div className="flex flex-col lg:flex-row gap-16 items-start">
             <div className="lg:w-2/5 space-y-8 lg:sticky lg:top-32">
@@ -355,10 +355,10 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
                 <GitMerge className="w-3 h-3" /> Core Algorithm
               </div>
               <h2 className="text-5xl lg:text-6xl font-black tracking-tighter leading-none">
-                KALMAN<br /><span className="text-primary italic">FUSION</span><br />ENGINE
+                TIDE<br /><span className="text-primary italic">CORRECTOR</span><br />ENGINE
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                Our proprietary <span className="text-foreground font-semibold">Bayesian state-space fusion layer</span> dynamically weights predictions from the Autoformer transformer and LightGBM gradient booster — selecting the optimal blend based on real-time uncertainty estimates.
+                Our <span className="text-foreground font-semibold">Temporal Integration of Demand Errors (TIDE)</span> layer applies an EMA-smoothed 24-element bias vector to the raw DLinear ensemble output. The bias is learned per forecast position from the last 48 hours of prediction errors, using exponential smoothing (alpha=0.1) for stable correction.
               </p>
               <div className="space-y-4 pt-4">
                 <KalmanStat label="Variance Reduction" value="38%" />
@@ -373,30 +373,30 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
                 {
                   step: '01',
                   icon: Database,
-                  title: 'Historical Context Window',
-                  desc: 'The engine ingests the last 672 timesteps (7 days × 96 steps/day at 15-min granularity) from the ValidatedData store, constructing a rich temporal context for both models.',
-                  code: 'context_window = df.tail(672)  # 7-day lookback'
+                  title: 'Historical Window (168h)',
+                  desc: 'The engine ingests the last 168 hourly readings (7 days) from the validated demand store, constructing a context window with hour-of-day, day-of-week sin/cos encodings and temperature features.',
+                  code: 'history = df.tail(168)  # 7-day lookback\nfeatures = encode_features(history)'
                 },
                 {
                   step: '02',
                   icon: Layers,
-                  title: 'Dual-Model Inference',
-                  desc: 'Autoformer (transformer-based) captures long-range seasonal dependencies. LightGBM handles non-linear feature interactions. Both produce independent point forecasts and variance estimates.',
-                  code: 'pred_af, var_af = autoformer.predict(x_enc)\npred_lgb, var_lgb = lightgbm.predict(x_feat)'
+                  title: 'DLinear 6-Fold Ensemble',
+                  desc: 'Six independently trained NLinear models each process the input window through trend-seasonal decomposition with calendar regression. The ensemble mean reduces single-fold variance.',
+                  code: 'raw = mean([fold(x) for fold in models])  # 6-fold average'
                 },
                 {
                   step: '03',
                   icon: GitMerge,
-                  title: 'Inverse-Variance Weighting',
-                  desc: 'The Kalman layer computes optimal weights inversely proportional to each model\'s prediction variance. Lower uncertainty = higher weight. This is equivalent to a one-step Kalman update.',
-                  code: 'w_af  = 1/var_af\nw_lgb = 1/var_lgb\nfused = (w_af*pred_af + w_lgb*pred_lgb) / (w_af + w_lgb)'
+                  title: 'TIDE Bias Correction',
+                  desc: 'The TIDE corrector maintains a 24-element EMA-smoothed bias vector (alpha=0.1) learned from the last 48 hours of prediction errors. Applied per forecast position to correct systematic model bias.',
+                  code: 'bias = tide.get_bias()  # per-position EMA\ncorrected = raw + bias'
                 },
                 {
                   step: '04',
                   icon: TrendingUp,
                   title: 'Uncertainty Quantification',
-                  desc: 'The fused variance is propagated to produce calibrated P10/P90 prediction intervals, enabling grid operators to plan for best-case and worst-case demand scenarios.',
-                  code: 'fused_var = 1 / (w_af + w_lgb)\np10 = fused - 1.28 * sqrt(fused_var)\np90 = fused + 1.28 * sqrt(fused_var)'
+                  desc: 'P10/P90 intervals are computed from the combined TIDE residual variance and ensemble disagreement. Forecast position errors are heteroskedastic — wider bands during ramp hours.',
+                  code: 'err_std = tide.get_error_std()\np10 = corrected - 1.28 * err_std\np90 = corrected + 1.28 * err_std'
                 }
               ].map((item, i) => (
                 <motion.div
@@ -418,7 +418,7 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
                       <h3 className="text-2xl font-black tracking-tight">{item.title}</h3>
                     </div>
                     <p className="text-lg text-muted-foreground leading-relaxed">{item.desc}</p>
-                    <div className="bg-muted border border-border p-4 mt-2">
+                    <div className="bg-surface-alt border border-border p-4 mt-2">
                       <pre className="text-base text-primary leading-relaxed overflow-x-auto" style={{ fontFamily: 'var(--font-geist-mono)' }}>{item.code}</pre>
                     </div>
                   </div>
@@ -441,10 +441,10 @@ export function LoginPage({ onSignIn, onSignUp }: LoginPageProps) {
                 API<br /><span className="text-primary italic">REFERENCE</span>
               </h2>
               <p className="text-lg text-muted-foreground max-w-xl">
-                All endpoints are served over HTTPS with JWT bearer authentication. Base URL: <code className="text-primary bg-muted px-2 py-0.5 text-sm" style={{ fontFamily: 'var(--font-geist-mono)' }}>https://api.gridforecast.gh/v1</code>
+                All endpoints are served over HTTPS with JWT bearer authentication. Base URL: <code className="text-primary bg-surface-alt px-2 py-0.5 text-sm" style={{ fontFamily: 'var(--font-geist-mono)' }}>https://api.gridforecast.gh/v1</code>
               </p>
             </div>
-            <div className="flex items-center gap-4 p-4 bg-muted border border-border">
+            <div className="flex items-center gap-4 p-4 bg-surface-alt border border-border">
               <Key className="w-5 h-5 text-primary flex-shrink-0" />
               <div>
                 <div className="text-xs font-black tracking-widest text-muted-foreground uppercase" style={{ fontFamily: 'var(--font-geist-mono)' }}>Authorization Header</div>
@@ -558,7 +558,7 @@ Authorization: Bearer <token>`}
           </div>
         </div>
       </section>
-      <footer className="py-24 border-t border-border bg-muted/50 backdrop-blur-md">
+      <footer className="py-24 border-t border-border bg-surface/30 backdrop-blur-md">
         <div className="max-w-[1600px] mx-auto px-8 lg:px-24 grid grid-cols-1 md:grid-cols-4 gap-16">
           <div className="col-span-1 md:col-span-2 space-y-8">
             <div className="flex items-center gap-4">
@@ -627,7 +627,7 @@ function StickyNavbar({ theme, setTheme }: { theme: any; setTheme: any }) {
         <div className="flex items-center gap-6">
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="p-3 bg-muted border border-border text-foreground hover:border-primary transition-all active:scale-95"
+            className="p-3 bg-surface-alt border border-border text-foreground hover:border-primary transition-all active:scale-95"
           >
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
@@ -731,7 +731,7 @@ function ArchNode({ icon: Icon, label, active = false }: any) {
   return (
     <div className="flex flex-col items-center gap-4 z-10">
       <div className={`w-20 h-20 flex items-center justify-center transition-all duration-700
-                      ${active ? 'bg-primary border-primary shadow-[0_0_30px_rgba(204,255,0,0.3)]' : 'bg-background border-border shadow-none'} border-2`}>
+                      ${active ? 'bg-primary border-primary shadow-[0_0_30px_rgba(75,111,255,0.3)]' : 'bg-background border-border shadow-none'} border-2`}>
         <Icon className={`w-8 h-8 ${active ? 'text-background' : 'text-muted-foreground'}`} />
       </div>
       <span className={`text-[10px] font-black tracking-widest uppercase ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{label}</span>
@@ -764,7 +764,7 @@ function FeatureCard({ icon: Icon, title, desc }: any) {
 function FeatureSmall({ icon: Icon, title }: any) {
   return (
     <div className="flex items-center gap-4 group cursor-pointer">
-      <div className="w-8 h-8 bg-muted border border-border flex items-center justify-center group-hover:bg-primary group-hover:border-primary transition-all">
+      <div className="w-8 h-8 bg-surface-alt border border-border flex items-center justify-center group-hover:bg-primary group-hover:border-primary transition-all">
         <Icon className="w-4 h-4 text-muted-foreground group-hover:text-background" />
       </div>
       <span className="text-xs font-black tracking-widest text-foreground uppercase">{title}</span>
@@ -852,7 +852,7 @@ function InputField({ label, placeholder, value, onChange, type = "text" }: any)
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-14 bg-muted border border-border px-6 text-sm text-foreground focus:border-primary focus:ring-0 transition-all outline-none"
+        className="w-full h-14 bg-card border border-border px-6 text-sm text-foreground focus:border-primary focus:ring-0 transition-all outline-none"
         style={{ fontFamily: 'var(--font-geist-mono)', borderRadius: 0 }}
         placeholder={placeholder}
       />

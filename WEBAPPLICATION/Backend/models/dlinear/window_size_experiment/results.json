@@ -1,0 +1,44 @@
+[
+  {
+    "name": "2yr_2024_2025",
+    "train": "2024-01-01->2025-12-31",
+    "test": "2026-01-01->2026-05-01",
+    "mae_norm": 0.3436,
+    "mae_mw": 120.1,
+    "train_rows": 14813,
+    "test_rows": 2832,
+    "train_years": 2,
+    "elapsed_s": 141,
+    "mae_raw_mw": 120.1,
+    "mae_tide_mw": 96.6,
+    "tide_improvement": 19.5
+  },
+  {
+    "name": "4yr_2022_2025",
+    "train": "2022-01-01->2025-12-31",
+    "test": "2026-01-01->2026-05-01",
+    "mae_norm": 0.3176,
+    "mae_mw": 118.4,
+    "train_rows": 32333,
+    "test_rows": 2832,
+    "train_years": 4,
+    "elapsed_s": 185,
+    "mae_raw_mw": 118.4,
+    "mae_tide_mw": 95.3,
+    "tide_improvement": 19.5
+  },
+  {
+    "name": "8yr_2018_2025",
+    "train": "2018-01-01->2025-12-31",
+    "test": "2026-01-01->2026-05-01",
+    "mae_norm": 0.2672,
+    "mae_mw": 118.3,
+    "train_rows": 67396,
+    "test_rows": 2832,
+    "train_years": 8,
+    "elapsed_s": 176,
+    "mae_raw_mw": 118.3,
+    "mae_tide_mw": 95.3,
+    "tide_improvement": 19.4
+  }
+]

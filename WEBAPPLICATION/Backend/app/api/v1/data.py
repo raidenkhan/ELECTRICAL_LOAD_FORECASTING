@@ -16,7 +16,7 @@ from app.core.logging import get_logger
 
 router = APIRouter()
 logger = get_logger(__name__)
-
+# should update the data.py or prolly remove it some of it's functionality doesn't sit with the current data set
 
 @router.post("/upload", response_model=DataUploadResponse)
 async def upload_data(
@@ -53,7 +53,7 @@ async def upload_data(
             status="validating"
         )
         
-        db.add(upload)
+        db.add(upload) #could include more robust checking for security, like virus scanning, file size limits, etc.
         await db.commit()
         await db.refresh(upload)
         
@@ -230,7 +230,6 @@ async def reset_system_data(
     """
     import subprocess
     import os
-    from app.services.forecast_service import ForecastService
     
     try:
         # Path to the restoration script
@@ -243,10 +242,6 @@ async def reset_system_data(
             logger.error(f"Restoration script failed: {result.stderr}")
             raise HTTPException(status_code=500, detail=f"Reset failed: {result.stderr}")
         
-        # Clear metrics cache
-        fs = ForecastService()
-        fs._cache["metrics"]["data"] = None
-            
         return {"status": "success", "message": "System reverted to Community Load baseline"}
         
     except Exception as e:
@@ -291,3 +286,28 @@ async def _store_validated_data(df: pd.DataFrame, upload_id: int, db: AsyncSessi
         logger.error(f"Error storing validated data: {str(e)}")
         await db.rollback()
         raise
+
+
+@router.get("/historical/stats")
+async def historical_data_stats(
+    db: AsyncSession = Depends(get_database),
+):
+    """Get statistics about the ECG historical demand dataset."""
+    from sqlalchemy import select, func
+    from app.db.models.ecg_history import EcgHistoricalDemand
+
+    count_result = await db.execute(select(func.count(EcgHistoricalDemand.id)))
+    total = count_result.scalar() or 0
+
+    if total == 0:
+        return {"total_records": 0, "date_range": "N/A", "avg_demand": 0}
+
+    min_date = await db.execute(select(func.min(EcgHistoricalDemand.date)))
+    max_date = await db.execute(select(func.max(EcgHistoricalDemand.date)))
+    avg_result = await db.execute(select(func.avg(EcgHistoricalDemand.demand_mw)))
+
+    return {
+        "total_records": total,
+        "date_range": f"{min_date.scalar()} — {max_date.scalar()}",
+        "avg_demand": round(avg_result.scalar() or 0, 2),
+    }

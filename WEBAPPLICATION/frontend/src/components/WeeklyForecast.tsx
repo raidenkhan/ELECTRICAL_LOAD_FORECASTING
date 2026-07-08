@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBadge } from './StatusBadge';
-import { ForecastResponse } from '@/services/forecastService';
+import { DispatchForecastResponse } from '@/services/dispatchForecastService';
 import { 
   ResponsiveContainer, 
   ComposedChart, 
@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 
 interface WeeklyForecastProps {
-  data?: ForecastResponse | null;
+  data?: DispatchForecastResponse | null;
   isLoading?: boolean;
 }
 
@@ -43,47 +43,25 @@ const generateSparkline = (pointsData?: number[]) => {
 };
 
 export function WeeklyForecast({ data, isLoading }: WeeklyForecastProps) {
-  // Parse up to 7 days from the high-res timestamps
+  // Parse single-day 24H forecast data
   const days: any[] = [];
   
-  if (data && data.timestamps && data.forecast_mw) {
-    let currentDayStr = '';
-    let currentDayPoints: number[] = [];
-    let currentDayPeak = 0;
-    let peakTimestampStr = '';
-    let parsedDaysCount = 0;
+  if (data && data.forecast_mw && data.forecast_mw.length > 0) {
+    const peakVal = Math.max(...data.forecast_mw);
+    const peakIdx = data.forecast_mw.indexOf(peakVal);
+    const dateStr = data.forecast_date
+      ? new Date(data.forecast_date + 'T12:00:00').toLocaleDateString([], { month: 'short', day: 'numeric' })
+      : '---';
 
-    for (let i = 0; i < data.timestamps.length; i++) {
-       const ts = data.timestamps[i];
-       const dateObj = new Date(ts);
-       const dayStr = dateObj.toLocaleDateString([], { weekday: 'long' });
-       
-       if (dayStr !== currentDayStr) {
-          if (currentDayStr !== '') {
-             days.push({
-                name: currentDayStr,
-                date: new Date(peakTimestampStr).toLocaleDateString([], { month: 'short', day: 'numeric' }),
-                peak: Math.round(currentDayPeak),
-                time: new Date(peakTimestampStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
-                holiday: false,
-                critical: currentDayPeak > 200, // threshold example
-                points: currentDayPoints
-             });
-             parsedDaysCount++;
-          }
-          currentDayStr = dayStr;
-
-          currentDayPoints = [];
-          currentDayPeak = 0;
-       }
-       
-       const val = data.forecast_mw[i];
-       currentDayPoints.push(val);
-       if (val > currentDayPeak) {
-          currentDayPeak = val;
-          peakTimestampStr = ts;
-       }
-    }
+    days.push({
+      name: new Date((data.forecast_date || '').split('-').join('/')).toLocaleDateString([], { weekday: 'long' }),
+      date: dateStr,
+      peak: Math.round(peakVal),
+      time: `H${(peakIdx + 1).toString().padStart(2, '0')}:00`,
+      holiday: false,
+      critical: peakVal > 200,
+      points: data.forecast_mw
+    });
   }
 
   // Fallback while loading or if parsing failed

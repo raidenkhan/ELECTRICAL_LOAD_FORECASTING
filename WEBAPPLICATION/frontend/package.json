@@ -42,6 +42,7 @@
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.5.1",
     "framer-motion": "^12.34.0",
+    "geist": "^1.7.1",
     "input-otp": "^1.4.1",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.469.0",
@@ -59,6 +60,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@tailwindcss/vite": "^4.3.0",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -66,7 +68,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.3.0",
     "typescript": "^5"
   }
 }

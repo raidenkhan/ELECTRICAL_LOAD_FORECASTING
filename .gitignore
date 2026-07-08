@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+myvenv/
+dist/
+build/
+*.spec
+
+# Node
+node_modules/
+.next/
+
+# Environment (keep .env.example as template)
+.env
+.env.production
+!.env.example
+
+# Database (SQLite with real data)
+*.db
+*.sqlite
+
+# Build artifacts
+WEBAPPLICATION/Backend/dist/
+WEBAPPLICATION/Backend/build/
+*.zip
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Agent configs
+.agents/
+.superpowers/
+.opencode/
+.opencode-docs/
+.clauge-worktrees/
+.understand-anything/
+
+# Old / redundant
+archive/
+data/
+webapp/
+
+# Large binary models (optional - keep if small, ignore if large)
+# *.joblib
+# *.pkl

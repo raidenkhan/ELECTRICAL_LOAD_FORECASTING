@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DLinear+H10 · Load Forecasting for Ghana</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg:           #FAFAF8;
+  --surface:      #FFFFFF;
+  --surface-card: #FFFFFF;
+  --border:       #E2DFD9;
+  --accent:       #33691E;
+  --accent-muted: rgba(51,105,30,0.07);
+  --success:      #1B7A3D;
+  --warning:      #C77500;
+  --error:        #C62828;
+  --text:         #111111;
+  --text-second:  #444444;
+  --text-muted:   #777777;
+  --text-faint:   #AAAAAA;
+  --font-heading: 'Instrument Serif', Georgia, serif;
+  --font-body:    'Inter', 'Geist', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  overflow: hidden;
+  height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+.viewer { width: 100vw; height: 100vh; overflow: hidden; position: relative; }
+.slides-wrapper {
+  display: flex; flex-direction: column; align-items: center;
+  position: absolute; left: 50%; top: 0; transform-origin: top center;
+}
+.slide {
+  width: 1920px; height: 1080px; flex-shrink: 0; position: relative;
+  overflow: hidden; background: var(--bg); scroll-snap-align: start;
+}
+.slide-grid {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 80px 80px;
+  opacity: 0.10;
+  z-index: 1;
+  pointer-events: none;
+}
+.slide-grid-wash {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 40% at 50% 15%, rgba(51,105,30,0.03) 0%, transparent 70%);
+  z-index: 2; pointer-events: none;
+}
+.slide-header {
+  position: absolute; left: 100px; top: 40px; z-index: 10;
+  display: flex; align-items: center; gap: 16px;
+}
+.slide-num-label {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.slide-context { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.slide-rule {
+  position: absolute; left: 100px; width: 48px; height: 4px;
+  background: var(--accent); z-index: 10;
+}
+.cover-logo {
+  font-family: var(--font-heading); font-size: 28px; color: var(--text); letter-spacing: -0.01em; font-weight: 700;
+}
+.cover-logo em { color: var(--accent); font-style: normal; }
+.cover-eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--accent-muted); border: 1px solid rgba(51,105,30,0.18);
+  padding: 6px 16px; font-size: 13px; color: var(--accent);
+  font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 28px;
+}
+.cover-eyebrow-dot { width: 6px; height: 6px; background: var(--accent); }
+.cover-title {
+  font-family: var(--font-heading); font-size: 88px; font-weight: 700;
+  line-height: 0.95; letter-spacing: -0.02em; color: var(--text);
+  margin-bottom: 16px;
+}
+.cover-title em { color: var(--accent); font-style: normal; }
+.cover-sub {
+  font-size: 20px; color: var(--text-second); line-height: 1.6; max-width: 900px; font-weight: 500;
+}
+.meta-label { font-size: 9px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; font-weight: 700; }
+.meta-value { font-family: var(--font-mono); font-size: 14px; color: var(--text); font-weight: 600; }
+.display { font-family: var(--font-heading); font-weight: 700; color: var(--text); }
+.display em { color: var(--accent); font-style: italic; }
+.kicker {
+  font-family: var(--font-body); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px;
+}
+.sm { font-size: 15px; color: var(--text-second); line-height: 1.6; font-weight: 500; }
+.sm strong { color: var(--text); font-weight: 700; }
+.card {
+  background: var(--surface-card); border: 1px solid var(--border); padding: 24px;
+}
+.card-bar { border-left: 4px solid var(--accent); }
+.card-accent {
+  background: var(--accent-muted); border: 1px solid rgba(51,105,30,0.18); padding: 24px;
+}
+.card-title { font-family: var(--font-heading); font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.card-title em { color: var(--accent); font-style: italic; }
+.data-label { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; font-weight: 700; }
+.data-num { font-family: var(--font-mono); font-size: 40px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 4px; }
+.data-desc { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+.data-num.accent { color: var(--accent); }
+.data-num.success { color: var(--success); }
+.data-num.warning { color: var(--warning); }
+.table-wrap { border: 1px solid var(--border); overflow: hidden; }
+.table-header {
+  display: grid; gap: 0;
+  background: var(--surface-alt, #F2F2EE); border-bottom: 1px solid var(--border);
+  font-size: 10px; font-weight: 700; color: var(--text-faint);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.table-header > div { padding: 10px 16px; border-right: 1px solid var(--border); }
+.table-header > div:last-child { border-right: none; }
+.table-row {
+  display: grid; gap: 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px; color: var(--text-second); font-weight: 500;
+}
+.table-row:last-child { border-bottom: none; }
+.table-row > div { padding: 12px 16px; border-right: 1px solid var(--border); display: flex; align-items: center; }
+.table-row > div:last-child { border-right: none; }
+.footer-cite {
+  position: absolute; left: 100px; bottom: 30px; z-index: 10;
+  font-size: 11px; color: var(--text-faint); font-family: var(--font-mono); font-weight: 500;
+}
+.progress-wrap {
+  position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: var(--border); z-index: 999;
+}
+.progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+.nav-dots {
+  position: fixed; right: 28px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 8px; z-index: 999;
+}
+.nav-dot {
+  width: 8px; height: 8px; border: 1.5px solid var(--text-faint);
+  background: transparent; cursor: pointer; transition: all 0.2s; padding: 0;
+}
+.nav-dot.active { background: var(--accent); border-color: var(--accent); }
+.slide-counter {
+  position: fixed; bottom: 32px; right: 32px; z-index: 999;
+  font-family: var(--font-mono); font-size: 13px; color: var(--text-faint); font-weight: 600;
+}
+.r, .rl, .rr, .rs { opacity: 0; transform: translateY(24px); transition: all 0.6s cubic-bezier(0.16,1,0.3,1); }
+.rl { transform: translateX(-30px); }
+.rr { transform: translateX(30px); }
+.rs { transform: scale(0.95); }
+.slide.v .r, .slide.v .rl, .slide.v .rr, .slide.v .rs { opacity: 1; transform: none; }
+.d1 { transition-delay: 0.06s; } .d2 { transition-delay: 0.12s; }
+.d3 { transition-delay: 0.18s; } .d4 { transition-delay: 0.24s; }
+.d5 { transition-delay: 0.30s; } .d6 { transition-delay: 0.36s; }
+.d7 { transition-delay: 0.42s; } .d8 { transition-delay: 0.48s; }
+.d9 { transition-delay: 0.54s; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.15s !important; }
+  .r, .rl, .rr, .rs { opacity: 1; transform: none; }
+}
+.chart-frame { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.chart-frame img { max-width: 100%; max-height: 100%; }
+</style>
+</head>
+<body>
+
+<div class="progress-wrap"><div class="progress-fill" id="pf"></div></div>
+<nav class="nav-dots" id="nav"></nav>
+<div class="slide-counter" id="counter">01 / 11</div>
+
+<div class="viewer"><div class="slides-wrapper" id="wrapper">
+
+<!-- ═══════════════ COVER ═══════════════ -->
+<section class="slide" data-i="0">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+
+  <div style="position:absolute; left:100px; top:50px; z-index:10;">
+    <span class="cover-logo">KNUST <em>×</em> GridCo</span>
+    <span style="font-size:12px; color:var(--text-faint); margin-left:16px; font-family:var(--font-mono); font-weight:600;">LOAD FORECASTING  ·  FAULT DETECTION  ·  GRID MONITORING</span>
+  </div>
+
+  <div style="position:absolute; left:100px; top:260px; z-index:10; max-width:1500px;">
+    <div class="cover-eyebrow r"><span class="cover-eyebrow-dot"></span> From Load Forecasting to Full Grid Intelligence</div>
+    <div class="cover-title r d1">DLinear+H10: Efficient AI for<br />Ghana's <em>National Grid.</em></div>
+    <div class="cover-sub r d2">A joint project between KNUST and GridCo — bringing <strong>accurate, data-driven forecasting</strong><br />to the national dispatch centre. Saving fuel. Saving money. <strong>Keeping the lights on.</strong></div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:100px; bottom:130px; z-index:10;">
+    <div style="display:flex; gap:32px;">
+      <div><span style="font-family:var(--font-mono); font-size:36px; font-weight:700; color:var(--accent);">70,228</span><span style="font-size:13px; color:var(--text-muted); font-weight:500; margin-left:6px;">Hours trained</span></div>
+      <div style="width:1px; background:var(--border);"></div>
+      <div><span style="font-family:var(--font-mono); font-size:36px; font-weight:700; color:var(--accent);">91</span><span style="font-size:13px; color:var(--text-muted); font-weight:500; margin-left:6px;">MW baseline</span></div>
+      <div style="width:1px; background:var(--border);"></div>
+      <div><span style="font-family:var(--font-mono); font-size:36px; font-weight:700; color:var(--accent);">36K</span><span style="font-size:13px; color:var(--text-muted); font-weight:500; margin-left:6px;">Parameters · CPU</span></div>
+      <div style="width:1px; background:var(--border);"></div>
+      <div><span style="font-family:var(--font-mono); font-size:36px; font-weight:700; color:var(--accent);">438K</span><span style="font-size:13px; color:var(--text-muted); font-weight:500; margin-left:6px;">MWh/year better dispatch</span></div>
+    </div>
+  </div>
+
+  <div class="r d4" style="position:absolute; right:100px; top:260px; z-index:10; background:var(--surface-card); border:1px solid var(--border); padding:20px 28px; min-width:260px;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div><div class="meta-label">Project Partners</div><div class="meta-value">KNUST × GridCo</div></div>
+      <div><div class="meta-label">Engine</div><div class="meta-value">DLinear + H10 Corrector</div></div>
+      <div><div class="meta-label">Operational Savings</div><div class="meta-value" style="color:var(--success);">438,000 MWh/year refined</div></div>
+      <div><div class="meta-label">Data Span</div><div class="meta-value">Jan 2018 – May 2026</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ SLIDE 1: THE DATA ═══════════════ -->
+<section class="slide" data-i="1">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">01 / The Data</span>
+    <span class="slide-context">70k hours from Ghana's national grid</span>
+  </div>
+  <div class="slide-rule" style="top:84px;"></div>
+
+  <div style="position:absolute; left:100px; top:140px; z-index:10; width:1720px;">
+    <div class="kicker r">Understanding the Dataset</div>
+    <div class="display r d1" style="font-size:56px;">What the Data Tells Us About<br />Ghana's <em>Growing Grid.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:100px; top:310px; width:840px; height:340px; z-index:10;">
+    <div class="card" style="padding:16px; height:100%;">
+      <div class="chart-frame"><img src="webapp/static/charts/demand_distribution.png" alt="Demand distribution" /></div>
+    </div>
+  </div>
+
+  <div class="r d2" style="position:absolute; right:100px; top:310px; width:840px; z-index:10;">
+    <div class="card card-bar" style="padding:24px;">
+      <div class="card-title">Here's What We Found</div>
+      <div class="sm" style="margin-bottom:12px;"><strong>Demand grew 2.5× in 8 years.</strong> From ~1,467 MW to ~3,750 MW. That's 12.4% annual growth. Compare this to Europe: 0–1%. A model trained on 2021 data won't work on 2026 data. The <strong>distribution has shifted.</strong></div>
+      <div class="sm" style="margin-bottom:12px;"><strong>Accuracy has a price tag.</strong> Every MW of forecast error costs GridCo money — either fuel burned for over-generation that nobody uses, or expensive peaker plants scrambled last-minute for under-generation. A more accurate forecast means <strong>leaner dispatch, less waste, lower costs.</strong></div>
+      <div class="sm"><strong>What we don't know:</strong> Electrification (67% → 83% rural access), GDP, urbanisation — these drive demand but we don't track them as features. The model absorbs them blindly.</div>
+    </div>
+    <div style="margin-top:8px; padding:12px 18px; background:var(--surface-card); border:1px solid var(--border);">
+      <div class="sm" style="font-size:13px;"><strong>Features:</strong> demand_mw  ·  temperature_c  ·  hour  ·  date  ·  3.95% filtered for sensor outages</div>
+    </div>
+    <div style="margin-top:8px; padding:10px 18px; border:1px solid var(--border);">
+      <div class="sm" style="font-size:13px;"><strong>Grid monitoring baseline:</strong> These same patterns define <strong>"normal"</strong> for this grid. The forecast becomes the reference. When actual load diverges from it, that's a signal — equipment stress, sensor drift, or grid anomaly. <strong>The more accurate the forecast, the smaller the fault you can detect.</strong></div>
+    </div>
+  </div>
+
+  <div class="footer-cite">Source: ECG SCADA  ·  12.4% CAGR = Compound Annual Growth Rate 2018–2026</div>
+</section>
+
+<!-- ═══════════════ SLIDE 2: AIMS ═══════════════ -->
+<section class="slide" data-i="2">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">02 / Aims</span>
+    <span class="slide-context">What we set out to achieve</span>
+  </div>
+  <div class="slide-rule" style="top:84px;"></div>
+
+  <div style="position:absolute; left:100px; top:140px; z-index:10; width:1720px;">
+    <div class="kicker r">Research Objectives</div>
+    <div class="display r d1" style="font-size:56px;">Six Aims for This<br />Academia–Industry <em>Collaboration.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:100px; top:340px; width:840px; z-index:10;">
+    <div class="card card-bar" style="padding:24px; height:300px;">
+      <div class="card-title">1. Accurate, Robust Forecasting</div>
+      <div class="sm">Develop a data-driven load forecasting model for Ghana's national grid that handles rapid demand growth (12.4% CAGR), distribution shifts, and limited feature availability — outperforming both operator heuristics and imported deep learning architectures.</div>
+    </div>
+    <div class="card card-bar" style="margin-top:10px; padding:24px; height:140px;">
+      <div class="card-title">2. Error Correction</div>
+      <div class="sm">Go beyond raw predictions. Study residual errors to build second-stage correctors that extract an additional 20–40% accuracy gain from autocorrelated error patterns.</div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; right:100px; top:340px; width:840px; z-index:10;">
+    <div class="card card-bar" style="padding:24px; height:175px;">
+      <div class="card-title">3. Production Deployment</div>
+      <div class="sm">Package research into a web application deployed at GridCo's dispatch centre — replacing a 45-minute Excel workflow with a 1-minute automated process. Keep operators in control.</div>
+    </div>
+    <div class="card card-bar" style="margin-top:10px; padding:24px; height:145px;">
+      <div class="card-title">4. Sustainable AI</div>
+      <div class="sm">Prove that accurate grid forecasting does not require GPU infrastructure or massive energy budgets. Demonstrate that a 36K-parameter CPU-trained model can beat Transformers on both accuracy and efficiency.</div>
+    </div>
+    <div class="card card-bar" style="margin-top:10px; padding:24px; height:130px;">
+      <div class="card-title">5. Insights for West African Grids</div>
+      <div class="sm">Draw generalisable lessons about load forecasting in rapidly developing electricity grids where stationary data assumptions fail.</div>
+    </div>
+    <div class="card card-bar" style="margin-top:8px; padding:20px; height:110px;">
+      <div class="card-title" style="font-size:24px;">6. Grid Intelligence Platform</div>
+      <div class="sm">Establish accurate load forecasting as the foundation for <strong>fault detection</strong> (deviations from forecast = anomalies), <strong>predictive maintenance</strong> (load patterns → equipment stress scheduling), and <strong>real-time grid monitoring</strong> (continuous health baseline).</div>
+    </div>
+  </div>
+
+  <div class="footer-cite">KNUST Department of Electrical Engineering  ·  GridCo National Dispatch Centre</div>
+</section>
+
+<!-- ═══════════════ SLIDE 3: GRID INTELLIGENCE ═══════════════ -->
+<section class="slide" data-i="3">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">03 / Grid Intelligence</span>
+    <span class="slide-context">Extending the forecast into operations</span>
+  </div>
+  <div class="slide-rule" style="top:84px;"></div>
+
+  <div style="position:absolute; left:100px; top:140px; z-index:10; width:1720px;">
+    <div class="kicker r">Vision</div>
+    <div class="display r d1" style="font-size:56px;">From Load Forecast to Full<br />Grid <em>Intelligence.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:100px; top:340px; width:540px; z-index:10;">
+    <div class="card card-bar" style="padding:24px; height:320px;">
+      <div class="card-title">Fault Detection</div>
+      <div class="sm" style="margin-bottom:8px;">The forecast IS the baseline. At 68.9 MW ARD-corrected accuracy, deviations as small as ~70 MW from expected load signal an anomaly — <strong>transformer stress, line overload, sensor drift, or illegal connection.</strong></div>
+      <div class="sm">Fold 4's 226 MW spike? That wasn't just a bad forecast — it was a <strong>grid event worth investigating.</strong> Every anomaly is a signal. The more accurate the baseline, the smaller the fault you catch.</div>
+    </div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:660px; top:340px; width:540px; z-index:10;">
+    <div class="card card-bar" style="padding:24px; height:320px;">
+      <div class="card-title">Predictive Maintenance</div>
+      <div class="sm" style="margin-bottom:8px;">Load patterns predict equipment stress. Morning ramps, evening peaks, wet vs dry season — these stress <strong>transformers, breakers, and lines</strong> in predictable ways.</div>
+      <div class="sm">An accurate forecast tells you <strong>when the next stress event is coming.</strong> Schedule maintenance before failure, not after. At 12.4% demand growth, ageing equipment fails faster. Knowing when to inspect saves downtime and money.</div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; right:100px; top:340px; width:540px; z-index:10;">
+    <div class="card-accent" style="padding:24px; height:320px;">
+      <div class="card-title" style="color:var(--text);">Grid Monitoring</div>
+      <div class="sm" style="margin-bottom:8px;">A continuous health baseline from a single model. The DLinear engine outputs: <strong>24h forecast + real-time deviation alerts + equipment stress scores + trend analytics.</strong></div>
+      <div class="sm"><strong>One model. One baseline. Multiple intelligence layers.</strong> The load forecast isn't the end product — it's the foundation for a smarter, safer, more efficient grid.</div>
+    </div>
+  </div>
+
+  <div class="r d4" style="position:absolute; left:100px; bottom:80px; width:1720px; z-index:10;">
+    <div style="padding:12px 18px; background:var(--accent-muted); border:1px solid rgba(51,105,30,0.18);">
+      <div class="sm" style="font-size:14px;"><strong>The same accurate forecast that saves GridCo fuel</strong> — 438,000 MWh/year better dispatch — <strong>also detects faults before they cause outages, schedules maintenance before failure, and monitors the grid in real time.</strong> Accuracy isn't just about numbers. It's about <strong>knowing what "normal" looks like.</strong></div>
+    </div>
+  </div>
+
+  <div class="footer-cite">ARD = Automatic Relevance Determination  ·  Fold 4 (2024) anomaly: 226 MW MAE spike during COVID recovery</div>
+</section>
+
+<!-- ═══════════════ SLIDE 4: GRIDCO ═══════════════ -->
+<section class="slide" data-i="4">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">04 / Current Practice</span>
+    <span class="slide-context">The operator's existing workflow</span>
+  </div>
+  <div class="slide-rule" style="top:84px;"></div>
+
+  <div style="position:absolute; left:100px; top:140px; z-index:10; width:1720px;">
+    <div class="kicker r">Operator Context</div>
+    <div class="display r d1" style="font-size:56px;">GridCo's Current Approach: Manual<br />Heuristics → <em>Data-Driven.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:100px; top:320px; width:540px; z-index:10;">
+    <div class="card" style="padding:24px; height:300px;">
+      <div class="card-title">What They Do Today</div>
+      <div class="sm" style="margin-bottom:8px;">Dispatchers use <strong>Excel</strong>. Find a similar historical day by experience, adjust for temperature, populate the schedule manually. Experienced operators know the grid well.</div>
+      <div class="sm"><strong>But:</strong> ~45 minutes per forecast. No learning from 70k hours of data. Long-term patterns invisible. Each forecast starts from scratch. Not efficient — for operator time or energy use.</div>
+    </div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:660px; top:320px; width:540px; z-index:10;">
+    <div class="card card-bar" style="padding:24px; height:300px;">
+      <div class="card-title">We Tested Their Approach</div>
+      <div class="sm" style="margin-bottom:8px;">Digitised the similar-day method as <strong>KNN.</strong> Result: <strong>141 MW MAE.</strong></div>
+      <div class="sm" style="margin-bottom:8px;">A simple 2-day weighted trend? <strong>113 MW MAE.</strong> Beat the heuristic.</div>
+      <div class="sm"><strong>Conclusion:</strong> Data-driven methods outperform human heuristics when given enough history. The data existed — it just wasn't being used. And our method uses <strong>zero GPU energy.</strong></div>
+    </div>
+  </div>
+
+  <div class="r d2" style="position:absolute; right:100px; top:320px; width:540px; z-index:10;">
+    <div class="card-accent" style="padding:24px; height:300px;">
+      <div class="card-title" style="color:var(--text);">So What Did We Build?</div>
+      <div class="sm" style="margin-bottom:8px;">A system that <strong>complements</strong> the operator — doesn't replace them.</div>
+      <div class="sm" style="margin-bottom:8px;">Forecast auto-generates in <strong>~1 minute.</strong> Fills the dispatch schedule automatically.</div>
+      <div class="sm"><strong>Operator stays in control.</strong> The forecast is a suggestion — accept, edit, or override. We digitised the Excel interface, not the job.</div>
+      <div class="sm" style="margin-top:6px;"><strong>Beyond forecasting:</strong> The same accurate baseline enables <strong>fault detection</strong> (deviation = anomaly), <strong>predictive maintenance</strong> (load patterns → equipment stress), and <strong>grid monitoring</strong> — all from the same DLinear engine.</div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:100px; bottom:90px; width:1720px; z-index:10;">
+    <div style="border-top:1px solid var(--border); padding-top:14px; display:flex; gap:40px;">
+      <div><span class="data-label">Manual time</span><div style="font-family:var(--font-mono); font-size:24px; font-weight:700; color:var(--warning);">~45 min</div></div>
+      <div><span class="data-label">KNN baseline</span><div style="font-family:var(--font-mono); font-size:24px; font-weight:700; color:var(--text-faint);">141 MW</div></div>
+      <div><span class="data-label">Simple trend</span><div style="font-family:var(--font-mono); font-size:24px; font-weight:700; color:var(--text-faint);">113 MW</div></div>
+      <div><span class="data-label">Our system</span><div style="font-family:var(--font-mono); font-size:24px; font-weight:700; color:var(--success);">~1 min  ·  68.9 MW</div></div>
+      <div><span class="data-label">Grid intelligence</span><div style="font-family:var(--font-mono); font-size:24px; font-weight:700; color:var(--accent);">Fault · Monitor · Maint.</div></div>
+    </div>
+  </div>
+
+  <div class="footer-cite">KNN = k-Nearest Neighbours  ·  MAE = Mean Absolute Error</div>
+</section>
+
+<!-- ═══════════════ SLIDE 5: FOUNDATIONS ═══════════════ -->
+<section class="slide" data-i="5">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">05 / Foundations</span>
+    <span class="slide-context">Understanding data before modelling</span>
+  </div>
+  <div class="slide-rule" style="top:84px;"></div>
+
+  <div style="position:absolute; left:100px; top:140px; z-index:10; width:1720px;">
+    <div class="kicker r">Data Exploration</div>
+    <div class="display r d1" style="font-size:56px;">We Started Simple. Here's<br />What We <em>Found First.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:100px; top:320px; width:840px; z-index:10;">
+    <div class="card" style="padding:24px; height:280px;">
+      <div class="card-title">Patterns Jumped Out</div>
+      <div class="sm" style="margin-bottom:6px;"><strong>Daily rhythm:</strong> Morning ramp. Evening peak. Overnight trough. Every day.</div>
+      <div class="sm" style="margin-bottom:6px;"><strong>Weekly rhythm:</strong> Weekdays high. Weekends low. Predictable.</div>
+      <div class="sm" style="margin-bottom:6px;"><strong>Seasons:</strong> Dry season ≠ wet season. Load changes with the calendar.</div>
+      <div class="sm"><strong>Growth:</strong> Upward drift across all 8 years. +12.4% CAGR in the raw data.</div>
+      <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">
+        <div class="sm" style="font-size:13px;"><strong>On temperature:</strong> It affects load — but it's slow-moving and already baked into hour and month features. Chasing temperature adds complexity without much gain — and complexity costs energy.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="r d2" style="position:absolute; right:100px; top:320px; width:840px; z-index:10;">
+    <div class="card card-bar" style="padding:24px; height:280px;">
+      <div class="card-title">We Resisted the Urge to Go Big</div>
+      <div class="sm" style="margin-bottom:10px;">Most projects reach for deep learning first. Big models. GPUs. Massive energy bills. We didn't. We asked: <strong>how far can simple, efficient methods take us?</strong></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px;">
+        <div>
+          <div class="data-label">First Try</div>
+          <div style="font-family:var(--font-mono); font-size:22px; font-weight:700; color:var(--accent);">~3–4% MAPE</div>
+          <div class="data-desc">Classical decomposition</div>
+        </div>
+        <div>
+          <div class="data-label">Second Try</div>
+          <div style="font-family:var(--font-mono); font-size:22px; font-weight:700; color:var(--accent);">113 MW MAE</div>
+          <div class="data-desc">Weighted trend (L1+L7)</div>
+        </div>
+      </div>
+      <div class="sm" style="font-size:13px;"><strong>Lesson:</strong> Simple models already capture most of the signal. Deep learning's value must be proven — not assumed. <strong>Energy efficiency is part of the design, not an afterthought.</strong></div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:100px; top:660px; width:1720px; z-index:10;">
+    <div style="padding:14px 20px; background:var(--accent-muted); border:1px solid rgba(51,105,30,0.18);">
+      <div class="sm" style="font-size:14px;"><strong>Our rule:</strong> Establish a strong simple baseline first. If classical decomposition hits 3–4% MAPE, don't jump to a transformer. Prove the marginal value of complexity — for accuracy <em>and</em> for the planet.</div>
+    </div>
+  </div>
+
+  <div class="footer-cite">MAPE = Mean Absolute Percentage Error  ·  L1 = last 24 hours  ·  L7 = last 7 days</div>
+</section>
+
+<!-- ═══════════════ SLIDE 6: DL BENCHMARKING ═══════════════ -->
+<section class="slide" data-i="6">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">06 / Benchmarking</span>
+    <span class="slide-context">6-fold expanding-window CV across 8 years</span>
+  </div>
+  <div class="slide-rule" style="top:84px;"></div>
+
+  <div style="position:absolute; left:100px; top:140px; z-index:10; width:1720px;">
+    <div class="kicker r">Deep Learning Comparison</div>
+    <div class="display r d1" style="font-size:56px;">DLinear Beat Transformers, LSTMs,<br />and CNNs — <em>Here's How.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:100px; top:330px; width:880px; z-index:10;">
+    <div class="table-wrap">
+      <div class="table-header" style="grid-template-columns: 1fr 80px 80px 70px;">
+        <div>Model</div><div>Mean MAE</div><div>+TIDE</div><div>Gain</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 80px 80px 70px;">
+        <div style="color:var(--text); font-weight:700;"><span style="color:var(--accent);">DLinear</span>  ·  36K params  ·  CPU</div>
+        <div style="font-family:var(--font-mono); color:var(--accent); font-weight:700; justify-content:center;">91 MW</div>
+        <div style="font-family:var(--font-mono); font-weight:700; justify-content:center;">67 MW</div>
+        <div style="font-family:var(--font-mono); color:var(--success); font-weight:600; justify-content:center;">−26%</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 80px 80px 70px;">
+        <div style="color:var(--text); font-weight:600;">CNN (WaveNet)  ·  1.2M  ·  GPU</div>
+        <div style="font-family:var(--font-mono); font-weight:600; justify-content:center;">97 MW</div>
+        <div style="font-family:var(--font-mono); font-weight:600; justify-content:center;">74 MW</div>
+        <div style="font-family:var(--font-mono); color:var(--success); font-weight:600; justify-content:center;">−23%</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 80px 80px 70px;">
+        <div style="color:var(--text); font-weight:600;">LSTM  ·  840K  ·  GPU</div>
+        <div style="font-family:var(--font-mono); font-weight:600; justify-content:center;">102 MW</div>
+        <div style="font-family:var(--font-mono); font-weight:600; justify-content:center;">79 MW</div>
+        <div style="font-family:var(--font-mono); color:var(--success); font-weight:600; justify-content:center;">−23%</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 80px 80px 70px; border-bottom:none;">
+        <div style="color:var(--text); font-weight:600;">Transformer  ·  2.1M  ·  GPU</div>
+        <div style="font-family:var(--font-mono); font-weight:600; justify-content:center;">109 MW</div>
+        <div style="font-family:var(--font-mono); font-weight:600; justify-content:center;">82 MW</div>
+        <div style="font-family:var(--font-mono); color:var(--success); font-weight:600; justify-content:center;">−24%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:100px; top:530px; width:880px; height:370px; z-index:10;">
+    <div class="card" style="padding:16px; height:100%;">
+      <div class="chart-frame"><img src="webapp/static/charts/fold_mae.png" alt="Per-fold MAE" /></div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; right:100px; top:330px; width:840px; height:570px; z-index:10;">
+    <div class="card card-bar" style="padding:24px; height:100%;">
+      <div class="card-title">Why DLinear Won</div>
+      <div class="sm" style="margin-bottom:8px;">DLinear = <strong>Decomposition Linear.</strong> It splits load into two parts:</div>
+      <div class="sm" style="margin-bottom:6px;">→ <strong>Trend</strong> — gradual direction</div>
+      <div class="sm" style="margin-bottom:6px;">→ <strong>Seasonal</strong> — daily/weekly rhythm</div>
+      <div class="sm" style="margin-bottom:10px;">Each gets a learned weight plus calendar info. They <strong>sum to the forecast.</strong> No attention. No recurrence. No convolutions.</div>
+      <div class="sm" style="margin-bottom:10px;"><strong>Why it works:</strong> Load patterns aren't that complex. DLinear's 36K parameters capture the signal. Bigger models (1–2M) fit noise. DLinear trains on a <strong>laptop CPU in minutes.</strong></div>
+      <div style="padding:12px; background:var(--accent-muted); border:1px solid rgba(51,105,30,0.18);">
+        <div class="sm" style="font-size:13px;"><strong>Energy efficiency:</strong> DLinear uses <strong>60–100× fewer parameters</strong> than the Transformer. No GPU required. Training a single fold consumes <strong>0.003 kWh</strong> — comparable to running a desk fan for 20 seconds. The Transformer would consume 5–10× that on GPU. And <strong>every MW DLinear saves</strong> vs the Transformer's forecast means <strong>real fuel not burned</strong> at GridCo's dispatch.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-cite">6-fold expanding window  ·  8 years of data  ·  Energy measured with CodeCarbon</div>
+</section>
+
+<!-- ═══════════════ SLIDE 7: DLINAR RESULTS ═══════════════ -->
+<section class="slide" data-i="7">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">07 / Results</span>
+    <span class="slide-context">Raw DLinear before any correction</span>
+  </div>
+  <div class="slide-rule" style="top:84px;"></div>
+
+  <div style="position:absolute; left:100px; top:140px; z-index:10; width:1720px;">
+    <div class="kicker r">Baseline Metrics</div>
+    <div class="display r d1" style="font-size:56px;">DLinear's Performance <em>Before</em> Correction.</div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:100px; top:320px; width:500px; z-index:10;">
+    <div class="table-wrap">
+      <div class="table-header" style="grid-template-columns: 1fr 80px 80px;">
+        <div>Horizon</div><div>MAE</div><div>MAPE</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 80px 80px;">
+        <div style="color:var(--text); font-weight:600;">Day-Ahead (24h)</div>
+        <div style="font-family:var(--font-mono); font-weight:600; justify-content:center;">121 MW</div>
+        <div style="font-family:var(--font-mono); font-weight:600; justify-content:center;">4.22%</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 80px 80px;">
+        <div style="color:var(--text); font-weight:600;">Week-Ahead (168h)</div>
+        <div style="font-family:var(--font-mono); font-weight:600; justify-content:center;">163 MW</div>
+        <div style="font-family:var(--font-mono); font-weight:600; justify-content:center;">5.30%</div>
+      </div>
+      <div class="table-row" style="grid-template-columns: 1fr 80px 80px; border-bottom:none;">
+        <div style="color:var(--text); font-weight:600;">Month-Ahead (720h)</div>
+        <div style="font-family:var(--font-mono); font-weight:600; justify-content:center;">104 MW</div>
+        <div style="font-family:var(--font-mono); font-weight:600; justify-content:center;">3.40%</div>
+      </div>
+    </div>
+    <div style="margin-top:6px; padding:8px 12px; border:1px solid var(--border);">
+      <div style="font-size:12px; color:var(--text-muted); font-weight:500;">One model handles all three horizons. 720h lower than 168h because longer horizons average out daily variation.</div>
+    </div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:630px; top:320px; width:550px; z-index:10;">
+    <div class="card card-bar" style="padding:20px;">
+      <div class="card-title" style="font-size:22px;">MAE vs MAPE — Why Both?</div>
+      <div class="sm" style="margin-bottom:6px;"><strong>MAE:</strong> Average error in megawatts. What GridCo dispatchers feel — they dispatch in MW.</div>
+      <div class="sm"><strong>MAPE:</strong> Error as a percentage. Useful across different load levels. 121 MW is ~3.9% at peak but bigger at low load.</div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; right:100px; top:320px; width:550px; z-index:10;">
+    <div style="padding:14px 18px; background:var(--accent-muted); border:1px solid rgba(51,105,30,0.18);">
+      <div class="sm" style="font-size:14px;"><strong>See that 2024 spike?</strong> Fold 4 hit <strong style="color:var(--error);">226 MW</strong> — more than double the average. COVID recovery broke the pattern. A model that worked in 2023 failed in 2024. This is why 6-fold CV matters: one number hides regime-dependent failure.</div>
+    </div>
+    <div style="margin-top:8px; padding:12px 16px; border:1px solid var(--border);">
+      <div class="sm" style="font-size:13px;"><strong>Carbon footprint:</strong> All 6 folds combined used <strong>0.02 kWh</strong> — less energy than boiling a kettle. Compare this to training a single Transformer on a GPU (~3–5 kWh per run). And that 121 MW day-ahead error? Every MW avoided means <strong>real fuel not burned and real money saved at GridCo.</strong></div>
+    </div>
+  </div>
+
+  <div class="footer-cite">6-fold mean: 110 MW  ·  Range: 92–226 MW  ·  Energy measured with CodeCarbon on laptop CPU</div>
+</section>
+
+<!-- ═══════════════ SLIDE 8: ERROR CORRECTION ═══════════════ -->
+<section class="slide" data-i="8">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">08 / Correction</span>
+    <span class="slide-context">Learning from prediction errors</span>
+  </div>
+  <div class="slide-rule" style="top:84px;"></div>
+
+  <div style="position:absolute; left:100px; top:140px; z-index:10; width:1720px;">
+    <div class="kicker r">Error Analysis</div>
+    <div class="display r d1" style="font-size:56px;">Good Results — But Errors<br />Told a <em>Different Story.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:100px; top:320px; width:840px; z-index:10;">
+    <div class="card card-bar" style="padding:24px; height:180px;">
+      <div class="card-title">Errors Are Not Random</div>
+      <div class="sm">We checked the residuals — what the model got wrong. Normally a good model's errors look like noise. Ours didn't. <strong style="color:var(--accent);">Correlation of 0.79</strong> between consecutive hours. If we over-predicted hour 0, we'd over-predict hour 1 too. <strong>Errors have structure. That makes them learnable.</strong></div>
+    </div>
+  </div>
+
+  <div class="r d2" style="position:absolute; right:100px; top:320px; width:840px; height:180px; z-index:10;">
+    <div class="card" style="padding:16px; height:100%;">
+      <div class="chart-frame"><img src="webapp/static/charts/error_correction.png" alt="Error correction" /></div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:100px; top:540px; width:540px; z-index:10;">
+    <div class="card" style="padding:20px; height:200px;">
+      <div class="card-title" style="font-size:20px;">TIDE — A Smart Filter</div>
+      <div class="sm" style="margin-bottom:8px;">Zero parameters. <strong>No training.</strong> No extra energy. Dampens recent errors using a weighted average — learns how much to trust the latest mistake vs. the long-term trend.</div>
+      <div class="sm" style="font-size:16px;"><strong>Result:</strong> <span style="color:var(--warning);">95.5 MW</span> <span style="color:var(--text-muted);">(−20.9%)</span></div>
+      <div class="sm" style="font-size:11px; color:var(--text-muted);">Zero additional energy cost</div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:660px; top:540px; width:540px; z-index:10;">
+    <div class="card" style="padding:20px; height:200px;">
+      <div class="card-title" style="font-size:20px;">ARD — Probabilistic Fix</div>
+      <div class="sm" style="margin-bottom:8px;">Bayesian model that learns persistent bias: "DLinear always over-predicts Tuesday 19h by 15 MW." Only works with true error access (sequential mode).</div>
+      <div class="sm" style="font-size:16px;"><strong>Result:</strong> <span style="color:var(--accent);">68.9 MW</span> <span style="color:var(--text-muted);">(−40.4% sequential)</span></div>
+      <div class="sm" style="font-size:11px; color:var(--text-muted);">CPU-trained · negligible energy</div>
+    </div>
+  </div>
+
+  <div class="r d4" style="position:absolute; right:100px; top:540px; width:540px; z-index:10;">
+    <div class="card-accent" style="padding:20px; height:200px;">
+      <div class="card-title" style="font-size:20px; color:var(--text);">The Critical Finding</div>
+      <div class="sm" style="margin-bottom:8px;">TIDE works because it has access to recent errors. ARD without error history? Useless. The dominant signal is <strong>time-based</strong> — not weather or calendar.</div>
+      <div class="sm"><strong>Why this matters:</strong> Batch models can't use this signal. But a <strong>streaming model</strong> — correcting hour-by-hour as actuals arrive — unlocks the full 40% gain. And it does so with <strong>near-zero operational cost</strong> while saving GridCo real fuel and money on dispatch.</div>
+    </div>
+  </div>
+
+  <div class="r d5" style="position:absolute; left:100px; bottom:80px; width:1720px; z-index:10;">
+    <div style="padding:10px 16px; background:var(--surface-alt, #F2F2EE); border:1px solid var(--border);">
+      <div style="font-size:13px; color:var(--text-muted); font-weight:500;">All methods: Baseline 115.6  ·  TIDE 95.5 (−21%)  ·  SMA-7d 106  ·  Kalman 98  ·  ARD batch 115  ·  ARD sequential 68.9 (−40%)</div>
+    </div>
+  </div>
+
+  <div class="footer-cite">TIDE = Trend-adjusted Iterative Debiasing Engine  ·  ARD = Automatic Relevance Determination</div>
+</section>
+
+<!-- ═══════════════ SLIDE 9: ENERGY EFFICIENCY ═══════════════ -->
+<section class="slide" data-i="9">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">09 / Energy</span>
+    <span class="slide-context">What GridCo saves with a better forecast</span>
+  </div>
+  <div class="slide-rule" style="top:84px;"></div>
+
+  <div style="position:absolute; left:100px; top:140px; z-index:10; width:1720px;">
+    <div class="kicker r">Operational Impact</div>
+    <div class="display r d1" style="font-size:56px;">The 50 MW Question: What Does Better<br />Accuracy Mean for GridCo's <em>Bottom Line?</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:100px; top:310px; width:1680px; z-index:10;">
+    <div class="card" style="padding:16px; height:340px;">
+      <div class="chart-frame"><img src="webapp/static/charts/energy_efficiency.png" alt="Energy efficiency analysis" /></div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:100px; top:680px; width:540px; z-index:10;">
+    <div class="card-accent" style="padding:16px 20px;">
+      <div class="sm" style="font-size:14px;"><strong>The Fuel Story.</strong><br />50 MW less error → 50 MW dispatched correctly every hour. No wasted fuel from over-generation (burning gas nobody needs). No expensive peaker scramble from under-generation. At ~0.4 tCO₂ per MWh, that's <strong>~20 tCO₂ saved per hour</strong> of avoided over-gen. Every MW of accuracy is <strong>real fuel left in the ground.</strong></div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:660px; top:680px; width:540px; z-index:10;">
+    <div style="padding:16px 20px; border:1px solid var(--border);">
+      <div class="sm" style="font-size:14px;"><strong>The Money Story.</strong><br />GridCo's peaker plants cost <strong>$150–300/MWh</strong> to run. A 50 MW under-forecast mistake can cost thousands per hour in fast-ramping generation alone. DLinear cuts that error by 35–50%. At 12.4% demand growth, the cost of being wrong <strong>compounds every year.</strong></div>
+    </div>
+  </div>
+
+  <div class="r d4" style="position:absolute; right:100px; top:680px; width:540px; z-index:10;">
+    <div style="padding:16px 20px; border:1px solid var(--border);">
+      <div class="sm" style="font-size:14px;"><strong>The Annual Picture.</strong><br />50 MW avg improvement × 24 hours × 365 days = <strong>438,000 MWh/year</strong> of better dispatch decisions. The model trains for 0.003 kWh per fold and runs on any server. The operational savings — in fuel, emissions, and peaker avoidance — are <strong>millions of times larger</strong> than the cost of the forecast.</div>
+    </div>
+  </div>
+
+  <div class="footer-cite">Gas turbine: ~40% efficiency, ~0.4 tCO₂/MWh  ·  Peaker fuel cost $150–300/MWh  ·  Model training: 0.02 kWh total</div>
+</section>
+
+<!-- ═══════════════ SLIDE 10: TAKEAWAYS ═══════════════ -->
+<section class="slide" data-i="10">
+  <div class="slide-grid"></div>
+  <div class="slide-grid-wash"></div>
+
+  <div class="slide-header">
+    <span class="slide-num-label">10 / Takeaways</span>
+    <span class="slide-context">What this means for West African grids</span>
+  </div>
+  <div class="slide-rule" style="top:84px;"></div>
+
+  <div style="position:absolute; left:100px; top:140px; z-index:10; width:1720px;">
+    <div class="kicker r">Conclusion</div>
+    <div class="display r d1" style="font-size:56px;">What This Work Says About West<br />African <em>Grids.</em></div>
+  </div>
+
+  <div class="r d2" style="position:absolute; left:100px; top:320px; width:840px; z-index:10;">
+    <div class="card" style="padding:24px; height:340px;">
+      <div class="card-title">Industrial Impact</div>
+      <div class="sm" style="margin-bottom:8px;">→ Replaced a <strong>~45-minute</strong> manual Excel workflow with a <strong>~1-minute</strong> automated process</div>
+      <div class="sm" style="margin-bottom:8px;">→ Web application deployed at GridCo — forecast auto-fills the dispatch schedule</div>
+      <div class="sm" style="margin-bottom:8px;">→ Operators stay in control: accept, edit, or override any forecast</div>
+      <div class="sm" style="margin-bottom:8px;">→ Designed for <strong>semi-annual retraining</strong> — energy footprint of 0.02 kWh per year</div>
+      <div class="sm" style="margin-bottom:8px;">→ <strong>No GPU.</strong> No specialized hardware. Runs on existing infrastructure.</div>
+      <div class="sm">→ <strong>Fuel savings:</strong> 50 MW better accuracy means ~438,000 MWh/year of smarter dispatch — <strong>less fuel burned, lower emissions, cheaper operations.</strong></div>
+    </div>
+  </div>
+
+  <div class="r d2" style="position:absolute; right:100px; top:320px; width:840px; z-index:10;">
+    <div class="card-accent" style="padding:24px; height:340px;">
+      <div class="card-title" style="color:var(--text);">For West African Grids</div>
+      <div class="sm" style="margin-bottom:6px;"><strong>Stationary data is a myth here.</strong> European grids grow 0–1% yearly. Ours: 12.4%. Models from mature grids degrade fast.</div>
+      <div class="sm" style="margin-bottom:6px;"><strong>6-fold CV is non-negotiable.</strong> Model rankings change year to year (2024's 226 MW spike). A single test year can mislead.</div>
+      <div class="sm" style="margin-bottom:6px;"><strong>Accuracy is fuel efficiency.</strong> Every MW of forecast error is a MW misdispatched — either wasted fuel or scramble for expensive reserves. Better forecasts = <strong>leaner, cheaper grid operations.</strong></div>
+      <div class="sm" style="margin-bottom:6px;"><strong>Streaming is the path forward.</strong> The 40% gain proves error autocorrelation is our strongest signal. Batch can't use it.</div>
+      <div class="sm"><strong>Sustainable AI is not optional.</strong> 36K parameters, CPU-trained, 0.003 kWh per fold. For developing grids, <strong>efficiency is a feature, not a trade-off.</strong> And efficiency in forecasting is really <strong>fuel efficiency for the grid</strong> — less reserve capacity idling, lower emissions per MWh delivered, <strong>cheaper electricity for everyone.</strong></div>
+    </div>
+  </div>
+
+  <div class="r d3" style="position:absolute; left:100px; top:710px; width:1720px; z-index:10;">
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+      <div style="padding:14px 18px; border:1px solid var(--border);">
+        <div class="data-label" style="font-size:9px;">Short-term</div>
+        <div class="sm" style="font-size:14px;">Deploy anomaly detection on forecast baseline — deviations = early warnings for faults</div>
+      </div>
+      <div style="padding:14px 18px; border:1px solid var(--border);">
+        <div class="data-label" style="font-size:9px;">Medium-term</div>
+        <div class="sm" style="font-size:14px;">Build predictive maintenance from load pattern stress profiles; integrate electrification and GDP features</div>
+      </div>
+      <div style="padding:14px 18px; border:1px solid var(--border);">
+        <div class="data-label" style="font-size:9px;">Long-term</div>
+        <div class="sm" style="font-size:14px;">Full grid monitoring platform: streaming DLinear + real-time correction + fault detection + maintenance scheduling</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="r d4" style="position:absolute; left:100px; bottom:90px; width:1720px; z-index:10;">
+    <div style="border-top:1px solid var(--border); padding-top:20px; display:flex; justify-content:space-between; align-items:center;">
+      <div class="sm" style="font-size:16px; max-width:1100px;"><em>"The simplest model won — and it was also the most energy-efficient. For grids that are growing fast and resource-constrained, sustainable AI isn't a nice-to-have. <strong>It's the only viable path.</strong>"</em></div>
+      <div style="text-align:right;">
+        <div style="font-family:var(--font-mono); font-size:11px; color:var(--text-faint); font-weight:600;">KNUST × GRIDCo  ·  AI4SD 2026</div>
+        <div style="font-family:var(--font-mono); font-size:11px; color:var(--accent); font-weight:600;">DLinear+H10  ·  0.02 kWh TOTAL</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-cite">Next: Anomaly detection on forecast baseline  ·  Predictive maintenance from load patterns  ·  Grid monitoring platform</div>
+</section>
+
+</div></div>
+
+<script>
+const wrapper = document.getElementById('wrapper');
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+const nav = document.getElementById('nav');
+const pf = document.getElementById('pf');
+const counter = document.getElementById('counter');
+
+slides[0].classList.add('v');
+
+for (let i = 0; i < total; i++) {
+  const d = document.createElement('button');
+  d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+  d.addEventListener('click', () => slides[i].scrollIntoView({ behavior: 'smooth' }));
+  nav.appendChild(d);
+}
+
+function fitSlide() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const scale = Math.min(vw / 1920, vh / 1080);
+  wrapper.style.transform = `translateX(-50%) scale(${scale})`;
+  const offsetY = (vh - 1080 * scale) / 2;
+  wrapper.style.marginTop = offsetY > 0 ? offsetY + 'px' : '0';
+}
+fitSlide();
+window.addEventListener('resize', fitSlide);
+
+const obs = new IntersectionObserver((entries) => {
+  for (const entry of entries) {
+    if (entry.isIntersecting) {
+      slides.forEach(s => s.classList.remove('v'));
+      entry.target.classList.add('v');
+      const idx = parseInt(entry.target.dataset.i);
+      document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+      const pct = ((idx + 1) / total) * 100;
+      pf.style.width = pct + '%';
+      counter.textContent = String(idx + 1).padStart(2, '0') + ' / ' + String(total).padStart(2, '0');
+    } else {
+      entry.target.classList.remove('v');
+    }
+  }
+}, { threshold: 0.3 });
+slides.forEach(s => obs.observe(s));
+
+document.addEventListener('keydown', (e) => {
+  const cur = document.querySelector('.slide.v');
+  if (!cur) return;
+  const idx = parseInt(cur.dataset.i);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+    e.preventDefault();
+    if (idx < total - 1) slides[idx + 1].scrollIntoView({ behavior: 'smooth' });
+  } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    if (idx > 0) slides[idx - 1].scrollIntoView({ behavior: 'smooth' });
+  } else if (e.key === 'Home') { slides[0].scrollIntoView({ behavior: 'smooth' }); }
+  else if (e.key === 'End') { slides[total - 1].scrollIntoView({ behavior: 'smooth' }); }
+});
+
+let wheelLocked = false;
+wrapper.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (wheelLocked) return;
+  const cur = document.querySelector('.slide.v');
+  if (!cur) return;
+  const idx = parseInt(cur.dataset.i);
+  const next = idx + (e.deltaY > 0 ? 1 : -1);
+  if (next < 0 || next >= total) return;
+  wheelLocked = true;
+  slides[next].scrollIntoView({ behavior: 'smooth' });
+  setTimeout(() => { wheelLocked = false; }, 500);
+}, { passive: false });
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+{
+  "autoformer_stlf": {
+    "model_name": "autoformer_stlf",
+    "version": "1.0.0",
+    "model_type": "autoformer",
+    "training_date": "2026-01-26T11:47:00",
+    "metrics": {
+      "mae": 12.5,
+      "rmse": 15.2
+    },
+    "params": {
+      "hidden_dim": 64,
+      "num_layers": 2
+    },
+    "training_data_hash": "N/A",
+    "feature_names": ["hour", "day_of_week", "month", "temperature"]
+  },
+  "decomp_engine": {
+    "model_name": "decomp_engine",
+    "version": "1.0.0",
+    "model_type": "stlf_decomposition",
+    "training_date": "2026-04-17T15:44:00",
+    "metrics": {
+      "mae": 8.3,
+      "rmse": 10.1
+    },
+    "params": {
+      "period": 24
+    },
+    "training_data_hash": "N/A",
+    "feature_names": ["trend", "seasonal", "residual"]
+  },
+  "lightgbm_stlf": {
+    "model_name": "lightgbm_stlf",
+    "version": "1.0.0",
+    "model_type": "lightgbm",
+    "training_date": "2026-01-27T09:26:00",
+    "metrics": {
+      "mae": 9.8,
+      "rmse": 12.4
+    },
+    "params": {
+      "num_leaves": 31,
+      "learning_rate": 0.05
+    },
+    "training_data_hash": "N/A",
+    "feature_names": ["hour", "day_of_week", "month", "temperature", "lag_24", "lag_168"]
+  },
+  "ltlf_recursive": {
+    "model_name": "ltlf_recursive",
+    "version": "1.0.0",
+    "model_type": "ltlf_recursive",
+    "training_date": "2026-02-05T10:14:00",
+    "metrics": {
+      "mae": 18.2,
+      "rmse": 22.5
+    },
+    "params": {
+      "quantiles": [0.1, 0.5, 0.9]
+    },
+    "training_data_hash": "N/A",
+    "feature_names": ["day_of_week", "month", "temperature"]
+  }
+}
